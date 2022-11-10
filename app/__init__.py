@@ -7,6 +7,7 @@ from app.database.Storage import Storage
 
 # Создание базы данных
 storage = Storage()
+storage.set_value("token", "-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJpZCI6MSwiZXhwIjoxNjY4MTU0ODI1fQ.HZogV0uF1M7rWUaT5E1NuGShmVPLfciG-EK6GKhmDZI")
 
 # Инициализация приложения
 app = QApplication([])
