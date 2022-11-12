@@ -802,6 +802,7 @@ class MainScreen(QMainWindow):
         self.clients_table.setObjectName("clients_table")
         self.clients_table.setColumnCount(0)
         self.clients_table.setRowCount(0)
+        self.clients_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalLayout_6.addWidget(self.clients_table)
 
@@ -1206,6 +1207,7 @@ class MainScreen(QMainWindow):
         print("exit")
 
     def refresh_clients(self):
+        self.clients_table.setSortingEnabled(True)
         self.clients_table.setColumnCount(5)
         self.clients_table.setHorizontalHeaderLabels([
             "id",
@@ -1273,3 +1275,7 @@ class MainScreen(QMainWindow):
                 self.clients_table.setItem(k, 4, is_private)
 
                 k += 1
+
+        column_width = self.clients_table.width() // 5 - 3
+        for i in range(5):
+            self.clients_table.setColumnWidth(i, column_width)
