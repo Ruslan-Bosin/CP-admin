@@ -15,6 +15,7 @@ from app.utils.check_server import check_server
 class LoginScreen(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+
         self.init_ui()
 
 
@@ -74,18 +75,6 @@ class LoginScreen(QMainWindow):
         self.setCentralWidget(widget)
 
     def OnClick(self):
-        if check_server():
-            response = requests.post(
-                f"{BASE_URL}/admin/login",
-                json={'email': f'{self.login_edit.text()}',
-                      'password': f'{self.password_edit.text()}'}
-            )
-            if (response.status_code == 200):
-                print("1")
-                response_json = response.json()
-                app.storage.set_value("token", response_json['token'])
-            else:
-                self.error_message.show()
 
         if not check_server():
 
@@ -99,15 +88,22 @@ class LoginScreen(QMainWindow):
             if messageBox == QMessageBox.StandardButton.Abort:
                 exit(-1)
 
+        response = requests.post(
+            f"{BASE_URL}/admin/login",
+            json={'email': f'{self.login_edit.text()}',
+                  'password': f'{self.password_edit.text()}'}
+        )
+
+        if (response.status_code == 200):
+
+            response_json = response.json()
+            app.storage.set_value("token", response_json['token'])
+
+            from app.screens.MainScreen import MainScreen
+            app.window.addWidget(MainScreen())
+            app.window.setCurrentIndex(2)
+        else:
+            self.error_message.show()
 
     def mousePressEvent(self, event):
         self.error_message.hide()
-
-
-# if __name__ == '__main__':
-#
-#     app = QApplication(sys.argv)
-#     app.setStyle("""""")
-#     win = LoginScreen()
-#     win.show()
-#     app.exec()

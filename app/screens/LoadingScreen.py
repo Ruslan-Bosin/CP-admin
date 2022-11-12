@@ -1,16 +1,17 @@
 import requests
-from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
 from config import BASE_URL
 import app
 from app import logger
-from app.screens.LoginScreen import LoginScreen
-from app.screens.MainScreen import MainScreen
 from app.utils.check_server import check_server
 
 class LoadingScreen(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        label = QLabel("Загрузка")
+        self.setCentralWidget(label)
 
         self.on_load()
 
@@ -36,16 +37,19 @@ class LoadingScreen(QMainWindow):
             )
 
             if response.status_code == 200:
+                from app.screens.MainScreen import MainScreen
                 app.window.addWidget(MainScreen())
-                app.window.setCurrentIndex(app.window.currentIndex() + 1)
+                app.window.setCurrentIndex(1)
             else:
                 QMessageBox.information(
                     self,
                     "Уведомление",
                     "Срок действия сессии истёк"
                 )
+                from app.screens.LoginScreen import LoginScreen
                 app.window.addWidget(LoginScreen())
-                app.window.setCurrentIndex(app.window.currentIndex() + 1)
+                app.window.setCurrentIndex(1)
         else:
+            from app.screens.LoginScreen import LoginScreen
             app.window.addWidget(LoginScreen())
-            app.window.setCurrentIndex(app.window.currentIndex() + 1)
+            app.window.setCurrentIndex(1)
