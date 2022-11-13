@@ -26,9 +26,14 @@ class MainScreen(QMainWindow):
         self.export_table_name: str = "organizations"
 
         self.current_table_name = "organizations"
+
         self.current_client_id = -1
-        self.clients_table_current_selection = (0, 0)
+        self.clients_table_current_selection = (-1, -1)
         self.clients_table_can_edit = False
+
+        self.current_organization_id = -1
+        self.organizations_table_current_selection = (-1, -1)
+        self.organizations_table_can_edit = False
 
         self.in_table_cell_alignment = QtCore.Qt.AlignmentFlag.AlignCenter
 
@@ -1912,7 +1917,7 @@ class MainScreen(QMainWindow):
         self.right_menu_main_button_page_13.clicked.connect(self.right_menu_create_record_clicked)
 
         self.clients_table.itemSelectionChanged.connect(self.right_menu_clients_selection_changed)
-
+        self.organizations_table.itemSelectionChanged.connect(self.right_menu_organizations_selection_changed)
 
         self.right_menu_button_page_2.clicked.connect(self.update_input_data_page_2)
         self.right_menu_input_page_2.textChanged.connect(self.input_data_changed_page_2)
@@ -2565,9 +2570,9 @@ class MainScreen(QMainWindow):
 
     def update_data_main_button_page_2_clicked(self):
 
-        headers = ["id", "name", "email", "password", "is_private"]
-
         if self.current_table_name == "clients":
+
+            headers = ["id", "name", "email", "password", "is_private"]
 
             if not check_server():
 
@@ -2588,6 +2593,46 @@ class MainScreen(QMainWindow):
 
             response = requests.put(
                 f"{BASE_URL}/admin/clients/update",
+                headers={"x-access-token": app.storage.get_value(key="token")},
+                json=_json
+            )
+
+            if response.status_code != 200:
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "Что-то введено некорректно"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Готово",
+                    "Данные обновлены"
+                )
+
+        elif self.current_table_name == "organizations":
+
+            headers = ["id", "title", "email", "password", "limit", "sticker", "image"]
+
+            if not check_server():
+
+                message_box = QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось подключиться к серверу",
+                    QMessageBox.StandardButton.Abort
+                )
+
+                if message_box == QMessageBox.StandardButton.Abort:
+                    exit(-1)
+
+            _json = {"id": self.current_client_id}
+            _key = headers[self.clients_table_current_selection[1]]
+            _value = self.right_menu_input_page_2.text()
+            _json[_key] = _value
+
+            response = requests.put(
+                f"{BASE_URL}/admin/organizations/update",
                 headers={"x-access-token": app.storage.get_value(key="token")},
                 json=_json
             )
@@ -2684,11 +2729,19 @@ class MainScreen(QMainWindow):
             )
 
     def input_data_changed_page_2(self):
-        before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
-        if self.right_menu_input_page_2.text() != before:
-            self.right_menu_main_button_page_2.setEnabled(True)
-        else:
-            self.right_menu_main_button_page_2.setEnabled(False)
+        if self.current_table_name == "clients":
+            before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+            if self.right_menu_input_page_2.text() != before:
+                self.right_menu_main_button_page_2.setEnabled(True)
+            else:
+                self.right_menu_main_button_page_2.setEnabled(False)
+        elif self.current_table_name == "organizations":
+            before = self.organizations_table.item(self.organizations_table_current_selection[0],
+                                             self.organizations_table_current_selection[1]).text()
+            if self.right_menu_input_page_2.text() != before:
+                self.right_menu_main_button_page_2.setEnabled(True)
+            else:
+                self.right_menu_main_button_page_2.setEnabled(False)
 
     def input_data_changed_page_3(self):
         checked = self.check_box_page_3.isChecked()
@@ -2806,6 +2859,33 @@ class MainScreen(QMainWindow):
             else:
                 self.right_menu_sub_text_page_4.setText("Вы не имеете право удалять клиентов")
                 self.right_menu_main_button_page_4.setEnabled(False)
+
+        else:
+            self.right_menu_stack.setCurrentIndex(0)
+
+    def right_menu_organizations_selection_changed(self):
+
+        selected = self.organizations_table.selectedItems()
+
+        if len(selected) == 1:
+            self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
+            self.organizations_table_current_selection = (selected[0].row(), selected[0].column())
+
+            if selected[0].column() == 0:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = False
+
+                self.right_menu_title_page_2.setText("Id:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(False)  # edit button
+
+                self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+
+        elif len(selected) == self.organizations_table.columnCount() and len(set([item.row() for item in selected])) == 1:
+            self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
         else:
             self.right_menu_stack.setCurrentIndex(0)
 
