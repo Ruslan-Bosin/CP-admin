@@ -2,16 +2,24 @@ import requests
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from PyQt6.QtCore import QPropertyAnimation
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtGui import QIcon, QFont, QPixmap, QMovie, QRegion
 from config import BASE_URL
 import app
 from app import logger
 from app.utils.check_server import check_server
+from PIL import Image
+import requests
+from PIL.ImageQt import ImageQt
+from app.utils.exetphook import excepthook
+
 
 
 class MainScreen(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.clients_data: list[dict[str: object]] = list()
 
         self.setStyleSheet("""
             * {
@@ -54,9 +62,9 @@ class MainScreen(QMainWindow):
         self.left_menu_container.setObjectName("left_menu_container")
 
         # Layout - 2
-        self.verticalLayout_2_2 = QtWidgets.QVBoxLayout(self.left_menu_container)
-        self.verticalLayout_2_2.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_2_2.setObjectName("verticalLayout_2")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.left_menu_container)
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
 
         # Left Menu
         self.left_menu = QtWidgets.QFrame(self.left_menu_container)
@@ -164,7 +172,7 @@ class MainScreen(QMainWindow):
 
         self.verticalLayout_4.addWidget(self.exit_button)
 
-        self.verticalLayout_2_2.addWidget(self.left_menu)
+        self.verticalLayout_2.addWidget(self.left_menu)
 
         self.horizontalLayout.addWidget(self.left_menu_container)
 
@@ -183,10 +191,10 @@ class MainScreen(QMainWindow):
         self.main_body.setObjectName("main_body")
 
         # Vertical Layout
-        self.verticalLayout__2 = QtWidgets.QVBoxLayout(self.main_body)
-        self.verticalLayout__2.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout__2.setSpacing(0)
-        self.verticalLayout__2.setObjectName("verticalLayout")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.main_body)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
 
         # Header
         self.header = QtWidgets.QFrame(self.main_body)
@@ -252,7 +260,7 @@ class MainScreen(QMainWindow):
 
         self.horizontalLayout_2.addWidget(self.open_right_menu_button)
 
-        self.verticalLayout__2.addWidget(self.header)
+        self.verticalLayout.addWidget(self.header)
 
         # Main Body
         self.body = QtWidgets.QFrame(self.main_body)
@@ -277,11 +285,11 @@ class MainScreen(QMainWindow):
         self.body_stack.setObjectName("body_stack")
 
         # Page 1
-        self.page_1_2 = QtWidgets.QWidget()
-        self.page_1_2.setObjectName("page_1")
+        self.page_1 = QtWidgets.QWidget()
+        self.page_1.setObjectName("page_1")
 
         # HorizontalLayout 4
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.page_1_2)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.page_1)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
 
         spacer_item4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding,
@@ -289,7 +297,7 @@ class MainScreen(QMainWindow):
         self.horizontalLayout_4.addItem(spacer_item4)
 
         # Forme layout
-        self.forme_layout = QtWidgets.QFrame(self.page_1_2)
+        self.forme_layout = QtWidgets.QFrame(self.page_1)
         self.forme_layout.setObjectName("forme_layout")
 
         # Form Layout
@@ -483,19 +491,19 @@ class MainScreen(QMainWindow):
                                              QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout_4.addItem(spacer_item8)
 
-        self.body_stack.addWidget(self.page_1_2)
+        self.body_stack.addWidget(self.page_1)
 
         # Page 2
-        self.page_2_2 = QtWidgets.QWidget()
-        self.page_2_2.setObjectName("page_2")
+        self.page_2 = QtWidgets.QWidget()
+        self.page_2.setObjectName("page_2")
 
         # HorizontalLayout 6
-        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.page_2_2)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.page_2)
         self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
 
         # Tab widget
-        self.tabWidget = QtWidgets.QTabWidget(self.page_2_2)
+        self.tabWidget = QtWidgets.QTabWidget(self.page_2)
         self.tabWidget.setObjectName("tabWidget")
 
         # Organizations Layout
@@ -647,6 +655,7 @@ class MainScreen(QMainWindow):
         self.organizations_table.setObjectName("organizations_table")
         self.organizations_table.setColumnCount(0)
         self.organizations_table.setRowCount(0)
+
 
         self.verticalLayout_5.addWidget(self.organizations_table)
 
@@ -802,7 +811,6 @@ class MainScreen(QMainWindow):
         self.clients_table.setObjectName("clients_table")
         self.clients_table.setColumnCount(0)
         self.clients_table.setRowCount(0)
-        self.clients_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalLayout_6.addWidget(self.clients_table)
 
@@ -953,18 +961,18 @@ class MainScreen(QMainWindow):
         self.verticalLayout_7.addLayout(self.top_panel_records)
 
         # Table Widget
-        self.tableWidget = QtWidgets.QTableWidget(self.records_layout)
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(0)
-        self.tableWidget.setRowCount(0)
+        self.records_table = QtWidgets.QTableWidget(self.records_layout)
+        self.records_table.setObjectName("tableWidget")
+        self.records_table.setColumnCount(0)
+        self.records_table.setRowCount(0)
 
-        self.verticalLayout_7.addWidget(self.tableWidget)
+        self.verticalLayout_7.addWidget(self.records_table)
 
         self.tabWidget.addTab(self.records_layout, "")
 
         self.horizontalLayout_6.addWidget(self.tabWidget)
 
-        self.body_stack.addWidget(self.page_2_2)
+        self.body_stack.addWidget(self.page_2)
 
         # Page 1
         self.page_3 = QtWidgets.QWidget()
@@ -974,7 +982,7 @@ class MainScreen(QMainWindow):
 
         self.horizontalLayout_3.addWidget(self.body_stack)
 
-        self.verticalLayout__2.addWidget(self.body)
+        self.verticalLayout.addWidget(self.body)
 
         self.horizontalLayout.addWidget(self.main_body)
 
@@ -1000,620 +1008,10 @@ class MainScreen(QMainWindow):
         # Right Menu
         self.right_menu = QtWidgets.QFrame(self.right_menu_container)
         self.right_menu.setMinimumSize(QtCore.QSize(250, 0))
+        self.right_menu.setStyleSheet("background: blue;")
         self.right_menu.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.right_menu.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         self.right_menu.setObjectName("right_menu")
-
-        self.right_menu_stack_layout = QtWidgets.QVBoxLayout(self.right_menu)
-        self.right_menu_stack_layout.setObjectName("right_menu_stack_layout")
-        self.right_menu_stack = QtWidgets.QStackedWidget(self.right_menu)
-        self.right_menu_stack.setObjectName("right_menu_stack")
-        self.page_1_right_menu = QtWidgets.QWidget()
-        self.page_1_right_menu.setObjectName("page_1_right_menu")
-        self.right_menu_vertical_layout_page_1 = QtWidgets.QVBoxLayout(self.page_1_right_menu)
-        self.right_menu_vertical_layout_page_1.setObjectName("right_menu_vertical_layout_page_2")
-        self.right_menu_not_working_label = QtWidgets.QLabel(self.page_1_right_menu)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,
-                                           QtWidgets.QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.right_menu_not_working_label.sizePolicy().hasHeightForWidth())
-        self.right_menu_not_working_label.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_not_working_label.setFont(font)
-        self.right_menu_not_working_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.right_menu_not_working_label.setObjectName("right_menu_not_working_label")
-        self.right_menu_vertical_layout_page_1.addWidget(self.right_menu_not_working_label)
-        self.right_menu_stack.addWidget(self.page_1_right_menu)
-        self.page_2_right_menu = QtWidgets.QWidget()
-        self.page_2_right_menu.setObjectName("page_2_right_menu")
-        self.right_menu_vertical_layout_page_2 = QtWidgets.QVBoxLayout(self.page_2_right_menu)
-        self.right_menu_vertical_layout_page_2.setSpacing(10)
-        self.right_menu_vertical_layout_page_2.setObjectName("right_menu_vertical_layout_page_2")
-        spacerItem = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                           QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_2.addItem(spacerItem)
-        self.right_menu_title_page_2 = QtWidgets.QLabel(self.page_2_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_2.setFont(font)
-        self.right_menu_title_page_2.setObjectName("right_menu_title_page_2")
-        self.right_menu_vertical_layout_page_2.addWidget(self.right_menu_title_page_2)
-        self.complex_layout_page_2 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_2.setObjectName("complex_layout_page_2")
-        self.right_menu_input_page_2 = QtWidgets.QLineEdit(self.page_2_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_2.setFont(font)
-        self.right_menu_input_page_2.setObjectName("right_menu_input_page_2")
-        self.complex_layout_page_2.addWidget(self.right_menu_input_page_2)
-        self.right_menu_button_page_2 = QtWidgets.QPushButton(self.page_2_right_menu)
-        self.right_menu_button_page_2.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_2.setObjectName("right_menu_button_page_2")
-        self.complex_layout_page_2.addWidget(self.right_menu_button_page_2)
-        self.right_menu_vertical_layout_page_2.addLayout(self.complex_layout_page_2)
-        self.right_menu_sub_text_page_2 = QtWidgets.QLabel(self.page_2_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_2.setFont(font)
-        self.right_menu_sub_text_page_2.setObjectName("right_menu_sub_text_page_2")
-        self.right_menu_vertical_layout_page_2.addWidget(self.right_menu_sub_text_page_2)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_2.addItem(spacerItem1)
-        self.right_menu_main_button_page_2 = QtWidgets.QPushButton(self.page_2_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_main_button_page_2.setFont(font)
-        self.right_menu_main_button_page_2.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_main_button_page_2.setObjectName("right_menu_main_button_page_2")
-        self.right_menu_vertical_layout_page_2.addWidget(self.right_menu_main_button_page_2)
-        self.right_menu_stack.addWidget(self.page_2_right_menu)
-        self.page_3_right_menu = QtWidgets.QWidget()
-        self.page_3_right_menu.setObjectName("page_3_right_menu")
-        self.right_menu_vertical_layout_page_3 = QtWidgets.QVBoxLayout(self.page_3_right_menu)
-        self.right_menu_vertical_layout_page_3.setSpacing(10)
-        self.right_menu_vertical_layout_page_3.setObjectName("right_menu_vertical_layout_page_3")
-        spacerItem2 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_3.addItem(spacerItem2)
-        self.right_menu_title_page_3 = QtWidgets.QLabel(self.page_3_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_3.setFont(font)
-        self.right_menu_title_page_3.setObjectName("right_menu_title_page_3")
-        self.right_menu_vertical_layout_page_3.addWidget(self.right_menu_title_page_3)
-        self.complex_layout_page_3 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_3.setObjectName("complex_layout_page_3")
-        self.check_box_page_3 = QtWidgets.QCheckBox(self.page_3_right_menu)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.check_box_page_3.sizePolicy().hasHeightForWidth())
-        self.check_box_page_3.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.check_box_page_3.setFont(font)
-        self.check_box_page_3.setObjectName("check_box_page_3")
-        self.complex_layout_page_3.addWidget(self.check_box_page_3)
-        self.right_menu_button_page_3 = QtWidgets.QPushButton(self.page_3_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_3.setFont(font)
-        self.right_menu_button_page_3.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_3.setObjectName("right_menu_button_page_3")
-        self.complex_layout_page_3.addWidget(self.right_menu_button_page_3)
-        self.right_menu_vertical_layout_page_3.addLayout(self.complex_layout_page_3)
-        self.right_menu_sub_text_page_3 = QtWidgets.QLabel(self.page_3_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_3.setFont(font)
-        self.right_menu_sub_text_page_3.setObjectName("right_menu_sub_text_page_3")
-        self.right_menu_vertical_layout_page_3.addWidget(self.right_menu_sub_text_page_3)
-        spacerItem3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_3.addItem(spacerItem3)
-        self.right_menu_main_button_page_3 = QtWidgets.QPushButton(self.page_3_right_menu)
-        self.right_menu_main_button_page_3.setObjectName("right_menu_main_button_page_3")
-        self.right_menu_vertical_layout_page_3.addWidget(self.right_menu_main_button_page_3)
-        self.right_menu_stack.addWidget(self.page_3_right_menu)
-        self.page_4_right_menu = QtWidgets.QWidget()
-        self.page_4_right_menu.setObjectName("page_4_right_menu")
-        self.right_menu_vertical_layout_page_4 = QtWidgets.QVBoxLayout(self.page_4_right_menu)
-        self.right_menu_vertical_layout_page_4.setSpacing(9)
-        self.right_menu_vertical_layout_page_4.setObjectName("right_menu_vertical_layout_page_4")
-        spacerItem4 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_4.addItem(spacerItem4)
-        self.right_menu_title_page_4 = QtWidgets.QLabel(self.page_4_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_4.setFont(font)
-        self.right_menu_title_page_4.setObjectName("right_menu_title_page_4")
-        self.right_menu_vertical_layout_page_4.addWidget(self.right_menu_title_page_4)
-        self.complex_layout_page_4 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_4.setObjectName("complex_layout_page_4")
-        self.change_data_button_page_4 = QtWidgets.QPushButton(self.page_4_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.change_data_button_page_4.setFont(font)
-        self.change_data_button_page_4.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.change_data_button_page_4.setObjectName("change_data_button_page_4")
-        self.complex_layout_page_4.addWidget(self.change_data_button_page_4)
-        self.right_menu_vertical_layout_page_4.addLayout(self.complex_layout_page_4)
-        self.right_menu_sub_text_page_4 = QtWidgets.QLabel(self.page_4_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_4.setFont(font)
-        self.right_menu_sub_text_page_4.setObjectName("right_menu_sub_text_page_4")
-        self.right_menu_vertical_layout_page_4.addWidget(self.right_menu_sub_text_page_4)
-        spacerItem5 = QtWidgets.QSpacerItem(20, 462, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_4.addItem(spacerItem5)
-        self.right_menu_stack.addWidget(self.page_4_right_menu)
-        self.page_5_right_menu = QtWidgets.QWidget()
-        self.page_5_right_menu.setObjectName("page_5_right_menu")
-        self.right_menu_vertical_layout_page_5 = QtWidgets.QVBoxLayout(self.page_5_right_menu)
-        self.right_menu_vertical_layout_page_5.setObjectName("right_menu_vertical_layout_page_5")
-        spacerItem6 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_5.addItem(spacerItem6)
-        self.right_menu_title_page_5_1 = QtWidgets.QLabel(self.page_5_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_5_1.setFont(font)
-        self.right_menu_title_page_5_1.setObjectName("right_menu_title_page_5_1")
-        self.right_menu_vertical_layout_page_5.addWidget(self.right_menu_title_page_5_1)
-        self.right_menu_input_page_5_1 = QtWidgets.QLineEdit(self.page_5_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_5_1.setFont(font)
-        self.right_menu_input_page_5_1.setObjectName("right_menu_input_page_5_1")
-        self.right_menu_vertical_layout_page_5.addWidget(self.right_menu_input_page_5_1)
-        spacerItem7 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_5.addItem(spacerItem7)
-        self.right_menu_title_page_5_2 = QtWidgets.QLabel(self.page_5_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_5_2.setFont(font)
-        self.right_menu_title_page_5_2.setObjectName("right_menu_title_page_5_2")
-        self.right_menu_vertical_layout_page_5.addWidget(self.right_menu_title_page_5_2)
-        self.complex_layout_page_5 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_5.setObjectName("complex_layout_page_5")
-        self.right_menu_input_page_5_2 = QtWidgets.QLineEdit(self.page_5_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_5_2.setFont(font)
-        self.right_menu_input_page_5_2.setObjectName("right_menu_input_page_5_2")
-        self.complex_layout_page_5.addWidget(self.right_menu_input_page_5_2)
-        self.right_menu_button_page_5 = QtWidgets.QPushButton(self.page_5_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_5.setFont(font)
-        self.right_menu_button_page_5.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_5.setObjectName("right_menu_button_page_5")
-        self.complex_layout_page_5.addWidget(self.right_menu_button_page_5)
-        self.right_menu_vertical_layout_page_5.addLayout(self.complex_layout_page_5)
-        spacerItem8 = QtWidgets.QSpacerItem(20, 432, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_5.addItem(spacerItem8)
-        self.right_menu_stack.addWidget(self.page_5_right_menu)
-        self.page_6_right_menu = QtWidgets.QWidget()
-        self.page_6_right_menu.setObjectName("page_6_right_menu")
-        self.right_menu_vertical_layout_page_6 = QtWidgets.QVBoxLayout(self.page_6_right_menu)
-        self.right_menu_vertical_layout_page_6.setObjectName("right_menu_vertical_layout_page_6")
-        spacerItem9 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                            QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_6.addItem(spacerItem9)
-        self.right_menu_title_page_6_1 = QtWidgets.QLabel(self.page_6_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_6_1.setFont(font)
-        self.right_menu_title_page_6_1.setObjectName("right_menu_title_page_6_1")
-        self.right_menu_vertical_layout_page_6.addWidget(self.right_menu_title_page_6_1)
-        self.right_menu_input_page_6_1 = QtWidgets.QLineEdit(self.page_6_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_6_1.setFont(font)
-        self.right_menu_input_page_6_1.setObjectName("right_menu_input_page_6_1")
-        self.right_menu_vertical_layout_page_6.addWidget(self.right_menu_input_page_6_1)
-        spacerItem10 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_6.addItem(spacerItem10)
-        self.right_menu_title_page_6_2 = QtWidgets.QLabel(self.page_6_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_6_2.setFont(font)
-        self.right_menu_title_page_6_2.setObjectName("right_menu_title_page_6_2")
-        self.right_menu_vertical_layout_page_6.addWidget(self.right_menu_title_page_6_2)
-        self.complex_layout_page_6 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_6.setObjectName("complex_layout_page_6")
-        self.right_menu_input_page_6_2 = QtWidgets.QLineEdit(self.page_6_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_6_2.setFont(font)
-        self.right_menu_input_page_6_2.setObjectName("right_menu_input_page_6_2")
-        self.complex_layout_page_6.addWidget(self.right_menu_input_page_6_2)
-        self.right_menu_button_page_6 = QtWidgets.QPushButton(self.page_6_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_6.setFont(font)
-        self.right_menu_button_page_6.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_6.setObjectName("right_menu_button_page_6")
-        self.complex_layout_page_6.addWidget(self.right_menu_button_page_6)
-        self.right_menu_vertical_layout_page_6.addLayout(self.complex_layout_page_6)
-        spacerItem11 = QtWidgets.QSpacerItem(20, 429, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_6.addItem(spacerItem11)
-        self.right_menu_stack.addWidget(self.page_6_right_menu)
-        self.page_7_right_menu = QtWidgets.QWidget()
-        self.page_7_right_menu.setObjectName("page_7_right_menu")
-        self.right_menu_vertical_layout_page_7 = QtWidgets.QVBoxLayout(self.page_7_right_menu)
-        self.right_menu_vertical_layout_page_7.setSpacing(10)
-        self.right_menu_vertical_layout_page_7.setObjectName("right_menu_vertical_layout_page_7")
-        spacerItem12 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_7.addItem(spacerItem12)
-        self.right_menu_title_page_7 = QtWidgets.QLabel(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_7.setFont(font)
-        self.right_menu_title_page_7.setObjectName("right_menu_title_page_7")
-        self.right_menu_vertical_layout_page_7.addWidget(self.right_menu_title_page_7)
-        self.complex_layout_page_7 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_7.setObjectName("complex_layout_page_7")
-        self.right_menu_input_page_7_1 = QtWidgets.QLineEdit(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_7_1.setFont(font)
-        self.right_menu_input_page_7_1.setObjectName("right_menu_input_page_7_1")
-        self.complex_layout_page_7.addWidget(self.right_menu_input_page_7_1)
-        self.right_menu_text_mid_page_7 = QtWidgets.QLabel(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_text_mid_page_7.setFont(font)
-        self.right_menu_text_mid_page_7.setObjectName("right_menu_text_mid_page_7")
-        self.complex_layout_page_7.addWidget(self.right_menu_text_mid_page_7)
-        self.right_menu_input_page_7_2 = QtWidgets.QLineEdit(self.page_7_right_menu)
-        self.right_menu_input_page_7_2.setEnabled(False)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_7_2.setFont(font)
-        self.right_menu_input_page_7_2.setObjectName("right_menu_input_page_7_2")
-        self.complex_layout_page_7.addWidget(self.right_menu_input_page_7_2)
-        self.right_menu_button_page_7 = QtWidgets.QPushButton(self.page_7_right_menu)  ####
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_7.setFont(font)
-        self.right_menu_button_page_7.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_7.setObjectName("right_menu_button_page_7")
-        self.complex_layout_page_7.addWidget(self.right_menu_button_page_7)
-        self.right_menu_vertical_layout_page_7.addLayout(self.complex_layout_page_7)
-        self.right_menu_progress_bar_page_7 = QtWidgets.QProgressBar(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_progress_bar_page_7.setFont(font)
-        self.right_menu_progress_bar_page_7.setProperty("value", 24)
-        self.right_menu_progress_bar_page_7.setTextVisible(True)
-        self.right_menu_progress_bar_page_7.setOrientation(QtCore.Qt.Orientation.Horizontal)
-        self.right_menu_progress_bar_page_7.setInvertedAppearance(False)
-        self.right_menu_progress_bar_page_7.setObjectName("right_menu_progress_bar_page_7")
-        self.right_menu_vertical_layout_page_7.addWidget(self.right_menu_progress_bar_page_7)
-        self.right_menu_sub_text_page_7 = QtWidgets.QLabel(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_7.setFont(font)
-        self.right_menu_sub_text_page_7.setObjectName("right_menu_sub_text_page_7")
-        self.right_menu_vertical_layout_page_7.addWidget(self.right_menu_sub_text_page_7)
-        spacerItem13 = QtWidgets.QSpacerItem(20, 396, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_7.addItem(spacerItem13)
-        self.right_menu_main_button_page_7 = QtWidgets.QPushButton(self.page_7_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_main_button_page_7.setFont(font)
-        self.right_menu_main_button_page_7.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_main_button_page_7.setObjectName("right_menu_main_button_page_7")
-        self.right_menu_vertical_layout_page_7.addWidget(self.right_menu_main_button_page_7)
-        self.right_menu_stack.addWidget(self.page_7_right_menu)
-        self.page_8_right_menu = QtWidgets.QWidget()
-        self.page_8_right_menu.setObjectName("page_8_right_menu")
-        self.right_menu_vertical_layout_page_8 = QtWidgets.QVBoxLayout(self.page_8_right_menu)
-        self.right_menu_vertical_layout_page_8.setObjectName("right_menu_vertical_layout_page_8")
-        spacerItem14 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_8.addItem(spacerItem14)
-        self.right_menu_title_page_8 = QtWidgets.QLabel(self.page_8_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_8.setFont(font)
-        self.right_menu_title_page_8.setObjectName("right_menu_title_page_8")
-        self.right_menu_vertical_layout_page_8.addWidget(self.right_menu_title_page_8)
-        self.right_menu_calendar_page_8 = QtWidgets.QCalendarWidget(self.page_8_right_menu)
-        self.right_menu_calendar_page_8.setEnabled(True)
-        self.right_menu_calendar_page_8.setObjectName("right_menu_calendar_page_8")
-        self.right_menu_vertical_layout_page_8.addWidget(self.right_menu_calendar_page_8)
-        self.complex_layout_page_8 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_8.setObjectName("complex_layout_page_8")
-        self.right_menu_input_page_8 = QtWidgets.QLineEdit(self.page_8_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_8.setFont(font)
-        self.right_menu_input_page_8.setObjectName("right_menu_input_page_8")
-        self.complex_layout_page_8.addWidget(self.right_menu_input_page_8)
-        self.change_data_button_page_8 = QtWidgets.QPushButton(self.page_8_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.change_data_button_page_8.setFont(font)
-        self.change_data_button_page_8.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.change_data_button_page_8.setObjectName("change_data_button_page_8")
-        self.complex_layout_page_8.addWidget(self.change_data_button_page_8)
-        self.right_menu_vertical_layout_page_8.addLayout(self.complex_layout_page_8)
-        self.right_menu_sub_text_page_8 = QtWidgets.QLabel(self.page_8_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_8.setFont(font)
-        self.right_menu_sub_text_page_8.setObjectName("right_menu_sub_text_page_8")
-        self.right_menu_vertical_layout_page_8.addWidget(self.right_menu_sub_text_page_8)
-        spacerItem15 = QtWidgets.QSpacerItem(20, 218, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_8.addItem(spacerItem15)
-        self.right_menu_main_button_page_8 = QtWidgets.QPushButton(self.page_8_right_menu)
-        self.right_menu_main_button_page_8.setObjectName("right_menu_main_button_page_8")
-        self.right_menu_vertical_layout_page_8.addWidget(self.right_menu_main_button_page_8)
-        self.right_menu_stack.addWidget(self.page_8_right_menu)
-        self.page_9_right_menu = QtWidgets.QWidget()
-        self.page_9_right_menu.setObjectName("page_9_right_menu")
-        self.right_menu_vertical_layout_page_9 = QtWidgets.QVBoxLayout(self.page_9_right_menu)
-        self.right_menu_vertical_layout_page_9.setObjectName("right_menu_vertical_layout_page_9")
-        spacerItem16 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_9.addItem(spacerItem16)
-        self.right_menu_title_page_9 = QtWidgets.QLabel(self.page_9_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_9.setFont(font)
-        self.right_menu_title_page_9.setObjectName("right_menu_title_page_9")
-        self.right_menu_vertical_layout_page_9.addWidget(self.right_menu_title_page_9)
-        self.image = QtWidgets.QLabel(self.page_9_right_menu)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.image.sizePolicy().hasHeightForWidth())
-        self.image.setSizePolicy(sizePolicy)
-        self.image.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        self.image.setText("")
-        self.image.setScaledContents(True)
-        self.image.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.image.setWordWrap(True)
-        self.image.setObjectName("image")
-        self.right_menu_vertical_layout_page_9.addWidget(self.image)
-        self.complex_layout_page_9 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_9.setObjectName("complex_layout_page_9")
-        self.right_menu_button_page_9_1 = QtWidgets.QPushButton(self.page_9_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_9_1.setFont(font)
-        self.right_menu_button_page_9_1.setObjectName("right_menu_button_page_9_1")
-        self.complex_layout_page_9.addWidget(self.right_menu_button_page_9_1)
-        self.right_menu_button_page_9_2 = QtWidgets.QPushButton(self.page_9_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_9_2.setFont(font)
-        self.right_menu_button_page_9_2.setObjectName("right_menu_button_page_9_2")
-        self.complex_layout_page_9.addWidget(self.right_menu_button_page_9_2)
-        self.right_menu_vertical_layout_page_9.addLayout(self.complex_layout_page_9)
-        self.right_menu_sub_text_page_9 = QtWidgets.QLabel(self.page_9_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_sub_text_page_9.setFont(font)
-        self.right_menu_sub_text_page_9.setObjectName("right_menu_sub_text_page_9")
-        self.right_menu_vertical_layout_page_9.addWidget(self.right_menu_sub_text_page_9)
-        spacerItem17 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_9.addItem(spacerItem17)
-        self.right_menu_stack.addWidget(self.page_9_right_menu)
-        self.page_10_right_menu = QtWidgets.QWidget()
-        self.page_10_right_menu.setObjectName("page_10_right_menu")
-        self.right_menu_vertical_layout_page_10 = QtWidgets.QVBoxLayout(self.page_10_right_menu)
-        self.right_menu_vertical_layout_page_10.setObjectName("right_menu_vertical_layout_page_10")
-        spacerItem18 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_10.addItem(spacerItem18)
-        self.right_menu_title_page_10 = QtWidgets.QLabel(self.page_10_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_10.setFont(font)
-        self.right_menu_title_page_10.setObjectName("right_menu_title_page_10")
-        self.right_menu_vertical_layout_page_10.addWidget(self.right_menu_title_page_10)
-        self.complex_layout_page_10 = QtWidgets.QHBoxLayout()
-        self.complex_layout_page_10.setObjectName("complex_layout_page_10")
-        self.right_menu_button_page_10_1 = QtWidgets.QPushButton(self.page_10_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_10_1.setFont(font)
-        self.right_menu_button_page_10_1.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_10_1.setObjectName("right_menu_button_page_10_1")
-        self.complex_layout_page_10.addWidget(self.right_menu_button_page_10_1)
-        self.right_menu_button_page_10_2 = QtWidgets.QPushButton(self.page_10_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_button_page_10_2.setFont(font)
-        self.right_menu_button_page_10_2.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_button_page_10_2.setObjectName("right_menu_button_page_10_2")
-        self.complex_layout_page_10.addWidget(self.right_menu_button_page_10_2)
-        self.right_menu_vertical_layout_page_10.addLayout(self.complex_layout_page_10)
-        spacerItem19 = QtWidgets.QSpacerItem(20, 494, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_10.addItem(spacerItem19)
-        self.right_menu_stack.addWidget(self.page_10_right_menu)
-        self.page_11_right_menu = QtWidgets.QWidget()
-        self.page_11_right_menu.setObjectName("page_11_right_menu")
-        self.right_menu_vertical_layout_page_11 = QtWidgets.QVBoxLayout(self.page_11_right_menu)
-        self.right_menu_vertical_layout_page_11.setObjectName("right_menu_vertical_layout_page_11")
-        spacerItem20 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_11.addItem(spacerItem20)
-        self.right_menu_title_page_11 = QtWidgets.QLabel(self.page_11_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_11.setFont(font)
-        self.right_menu_title_page_11.setObjectName("right_menu_title_page_11")
-        self.right_menu_vertical_layout_page_11.addWidget(self.right_menu_title_page_11)
-        self.right_menu_input_page_11_1 = QtWidgets.QLineEdit(self.page_11_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_11_1.setFont(font)
-        self.right_menu_input_page_11_1.setObjectName("right_menu_input_page_11_1")
-        self.right_menu_vertical_layout_page_11.addWidget(self.right_menu_input_page_11_1)
-        self.right_menu_input_page_11_2 = QtWidgets.QLineEdit(self.page_11_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_11_2.setFont(font)
-        self.right_menu_input_page_11_2.setObjectName("right_menu_input_page_11_2")
-        self.right_menu_vertical_layout_page_11.addWidget(self.right_menu_input_page_11_2)
-        self.right_menu_input_page_11_3 = QtWidgets.QLineEdit(self.page_11_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_11_3.setFont(font)
-        self.right_menu_input_page_11_3.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
-        self.right_menu_input_page_11_3.setObjectName("right_menu_input_page_11_3")
-        self.right_menu_vertical_layout_page_11.addWidget(self.right_menu_input_page_11_3)
-        spacerItem21 = QtWidgets.QSpacerItem(20, 418, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_11.addItem(spacerItem21)
-        self.right_menu_main_button_page_11 = QtWidgets.QPushButton(self.page_11_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_main_button_page_11.setFont(font)
-        self.right_menu_main_button_page_11.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_main_button_page_11.setObjectName("right_menu_main_button_page_11")
-        self.right_menu_vertical_layout_page_11.addWidget(self.right_menu_main_button_page_11)
-        self.right_menu_stack.addWidget(self.page_11_right_menu)
-        self.page_12_right_menu = QtWidgets.QWidget()
-        self.page_12_right_menu.setObjectName("page_12_right_menu")
-        self.right_menu_vertical_layout_page_12 = QtWidgets.QVBoxLayout(self.page_12_right_menu)
-        self.right_menu_vertical_layout_page_12.setObjectName("right_menu_vertical_layout_page_12")
-        spacerItem22 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_12.addItem(spacerItem22)
-        self.right_menu_title_page_12 = QtWidgets.QLabel(self.page_12_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_12.setFont(font)
-        self.right_menu_title_page_12.setObjectName("right_menu_title_page_12")
-        self.right_menu_vertical_layout_page_12.addWidget(self.right_menu_title_page_12)
-        self.right_menu_input_page_12_1 = QtWidgets.QLineEdit(self.page_12_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_12_1.setFont(font)
-        self.right_menu_input_page_12_1.setObjectName("right_menu_input_page_12_1")
-        self.right_menu_vertical_layout_page_12.addWidget(self.right_menu_input_page_12_1)
-        self.right_menu_input_page_12_2 = QtWidgets.QLineEdit(self.page_12_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_12_2.setFont(font)
-        self.right_menu_input_page_12_2.setObjectName("right_menu_input_page_12_2")
-        self.right_menu_vertical_layout_page_12.addWidget(self.right_menu_input_page_12_2)
-        self.right_menu_input_page_12_3 = QtWidgets.QLineEdit(self.page_12_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_12_3.setFont(font)
-        self.right_menu_input_page_12_3.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
-        self.right_menu_input_page_12_3.setObjectName("right_menu_input_page_12_3")
-        self.right_menu_vertical_layout_page_12.addWidget(self.right_menu_input_page_12_3)
-        spacerItem23 = QtWidgets.QSpacerItem(20, 418, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_12.addItem(spacerItem23)
-        self.right_menu_main_button_page_12 = QtWidgets.QPushButton(self.page_12_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_main_button_page_12.setFont(font)
-        self.right_menu_main_button_page_12.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_main_button_page_12.setObjectName("right_menu_main_button_page_12")
-        self.right_menu_vertical_layout_page_12.addWidget(self.right_menu_main_button_page_12)
-        self.right_menu_stack.addWidget(self.page_12_right_menu)
-        self.page_13_right_menu = QtWidgets.QWidget()
-        self.page_13_right_menu.setObjectName("page_13_right_menu")
-        self.right_menu_vertical_layout_page_13 = QtWidgets.QVBoxLayout(self.page_13_right_menu)
-        self.right_menu_vertical_layout_page_13.setObjectName("right_menu_vertical_layout_page_13")
-        spacerItem24 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Fixed)
-        self.right_menu_vertical_layout_page_13.addItem(spacerItem24)
-        self.right_menu_title_page_13 = QtWidgets.QLabel(self.page_13_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        font.setPointSize(13)
-        font.setBold(True)
-        font.setWeight(75)
-        self.right_menu_title_page_13.setFont(font)
-        self.right_menu_title_page_13.setObjectName("right_menu_title_page_13")
-        self.right_menu_vertical_layout_page_13.addWidget(self.right_menu_title_page_13)
-        self.right_menu_input_page_13_1 = QtWidgets.QLineEdit(self.page_13_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_13_1.setFont(font)
-        self.right_menu_input_page_13_1.setObjectName("right_menu_input_page_13_1")
-        self.right_menu_vertical_layout_page_13.addWidget(self.right_menu_input_page_13_1)
-        self.right_menu_input_page_13_2 = QtWidgets.QLineEdit(self.page_13_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_input_page_13_2.setFont(font)
-        self.right_menu_input_page_13_2.setObjectName("right_menu_input_page_13_2")
-        self.right_menu_vertical_layout_page_13.addWidget(self.right_menu_input_page_13_2)
-        spacerItem25 = QtWidgets.QSpacerItem(20, 444, QtWidgets.QSizePolicy.Policy.Minimum,
-                                             QtWidgets.QSizePolicy.Policy.Expanding)
-        self.right_menu_vertical_layout_page_13.addItem(spacerItem25)
-        self.right_menu_main_button_page_13 = QtWidgets.QPushButton(self.page_13_right_menu)
-        font = QtGui.QFont()
-        font.setFamily("Arial")
-        self.right_menu_main_button_page_13.setFont(font)
-        self.right_menu_main_button_page_13.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.right_menu_main_button_page_13.setObjectName("right_menu_main_button_page_13")
-        self.right_menu_vertical_layout_page_13.addWidget(self.right_menu_main_button_page_13)
-        self.right_menu_stack.addWidget(self.page_13_right_menu)
-        self.right_menu_stack_layout.addWidget(self.right_menu_stack)
 
         self.verticalLayout_3.addWidget(self.right_menu)
 
@@ -1625,35 +1023,133 @@ class MainScreen(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
 
+        self.body_stack.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(self)
 
         self.setup_ui()
-        self.setup_stacks_and_tabs()
-        self.setup_text()
         self.update_ui()
+        self.setup_tables("clients")
 
-    def setup_text(self):
+        self.setup_tables("records")
+        self.setup_tables("organizations")
+        self.setup_admin_info()
+
+    def setup_tables(self, type: str):
+        if type == "clients":
+            self.clients_table.setColumnCount(5)
+            self.clients_table.setHorizontalHeaderLabels([
+                "id",
+                "имя",
+                "email",
+                "пароль",
+                "приватный"
+            ])
+        if type == "records":
+            self.records_table.setColumnCount(7)
+            self.records_table.setHorizontalHeaderLabels([
+                "id",
+                "организация",
+                "название организации",
+                "пользователь",
+                "имя пользователя",
+                "количество накопленных купонов",
+                "дата последней записи"
+            ])
+        if type == "organizations":
+            self.organizations_table.setColumnCount(7)
+            self.organizations_table.setHorizontalHeaderLabels([
+                "id",
+                "название организации",
+                "email",
+                "пароль",
+                "максимум купонов",
+                "стикер",
+                "изображение"
+            ])
+
+    def setup_admin_info(self):
+        response = requests.get(
+            f"{BASE_URL}/admin/info",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+        response = response.json()[0]
+        self.account_label.setText("Профиль")
+        self.email_label.setText("Почта:")
+        self.email_field.setText(response["email"])
+        self.password_label.setText("Пароль:")
+        self.password_field.setText("12345678")
+        self.editing_label.setText("Редактирование:")
+        if response["can_edit"] == True:
+            self.editing.setChecked(True)
+        else:
+            self.editing.setChecked(False)
+            self.editing.setText("Запрещено")
+
+        self.editing_button.setText("Запросить доступ")
+        self.logout_button.setText("Выйти")
+
+
+    def setup_ui(self):
         self.left_menu_title.setText("Страницы:")
+
         self.page_1_button.setText("Главная")
+        self.page_1_button.setCheckable(True)
+        self.page_1_button.setChecked(True)
+        self.page_1_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.page_1_button.setIcon(QtGui.QIcon("app/static/icons/database.svg"))
+        self.page_1_button.clicked.connect(self.page_1_button_clicked)
+
         self.page_2_button.setText("Аккаунт")
+        self.page_2_button.setCheckable(True)
+        self.page_2_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.page_2_button.setIcon(QtGui.QIcon("app/static/icons/user.svg"))
+        self.page_2_button.clicked.connect(self.page_2_button_clicked)
+
         self.page_3_button.setText("Логи")
+        self.page_3_button.setCheckable(True)
+        self.page_3_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.page_3_button.setIcon(QtGui.QIcon("app/static/icons/logs.svg"))
+        self.page_3_button.clicked.connect(self.page_3_button_clicked)
+
         self.exit_button.setText("Выйти")
+        self.exit_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.exit_button.setIcon(QtGui.QIcon("app/static/icons/logout.svg"))
+        self.exit_button.setIconSize(QtCore.QSize(12, 12))
+        self.exit_button.clicked.connect(self.exit_button_clicked)
+
         self.page_title.setText("Название")
+
+        self.tabWidget.setTabText(0, "Организации")
+        self.tabWidget.setTabText(1, "Клиенты")
+        self.tabWidget.setTabText(2, "Записи")
+
         self.search_line_edit.setPlaceholderText("Поиск")
         self.search_button.setText("Поиск")
+
         self.sort_button.setText("Сортировка")
         self.save_button.setText("Экспорт")
         self.refresh_button.setText("Обновить")
+
+
         self.search_line_edit_clients.setPlaceholderText("Поиск")
         self.search_button_clients.setText("Поиск")
+
         self.sort_button_clients.setText("Сортировка")
         self.save_button_clients.setText("Экспорт")
         self.refresh_button_clients.setText("Обновить")
+
+
         self.search_line_edit_records.setPlaceholderText("Поиск")
         self.search_button_records.setText("Поиск")
+
         self.sort_button_records.setText("Сортировка")
         self.save_button_records.setText("Экспорт")
         self.refresh_button_records.setText("Обновить")
+
+        self.body_stack.setCurrentIndex(1)
+
+        # параметры аккаунта
         self.account_label.setText("Профиль")
         self.email_label.setText("Почта:")
         self.email_field.setText("RuslanBosin28Gmail.com")
@@ -1663,65 +1159,12 @@ class MainScreen(QMainWindow):
         self.editing.setText("Разрешено")
         self.editing_button.setText("Запросить доступ")
         self.logout_button.setText("Выйти")
-        self.tabWidget.setTabText(0, "Организации")
-        self.tabWidget.setTabText(1, "Клиенты")
-        self.tabWidget.setTabText(2, "Записи")
-        self.right_menu_not_working_label.setText("Боковое меню недоступно")
-        self.right_menu_title_page_2.setText("Поле:")
-        self.right_menu_title_page_3.setText("Поле:")
-        self.right_menu_title_page_4.setText("Поле:")
-
-        self.right_menu_button_page_2.setText("Редактировать")
-        self.right_menu_button_page_3.setText("Редактировать")
-        self.right_menu_button_page_7.setText("Редактировать")
-        self.change_data_button_page_8.setText("Редактировать")
-        self.right_menu_sub_text_page_2.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_sub_text_page_3.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_sub_text_page_4.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_sub_text_page_7.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_sub_text_page_8.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_sub_text_page_9.setText("У вас нет прав на редактирование этого поля")
-        self.right_menu_main_button_page_2.setText("Сохранить изменения")
-        self.right_menu_main_button_page_3.setText("Сохранить изменения")
-        self.right_menu_main_button_page_7.setText("Сохранить изменения")
-        self.right_menu_main_button_page_8.setText("Сохранить изменения")
-        self.check_box_page_3.setText("Приватный")
-        self.page_title.setText("Главная")
-
-    def setup_stacks_and_tabs(self):
-        self.body_stack.setCurrentIndex(1)
-        self.right_menu_stack.setCurrentIndex(3)
-        self.tabWidget.setCurrentIndex(0)
-
-    def setup_ui(self):
-
-        self.page_1_button.setCheckable(True)
-        self.page_1_button.setChecked(True)
-        self.page_1_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.page_1_button.setIcon(QtGui.QIcon("app/static/icons/database.svg"))
-        self.page_1_button.clicked.connect(self.page_1_button_clicked)
-
-        self.page_2_button.setCheckable(True)
-        self.page_2_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.page_2_button.setIcon(QtGui.QIcon("app/static/icons/user.svg"))
-        self.page_2_button.clicked.connect(self.page_2_button_clicked)
-
-        self.page_3_button.setCheckable(True)
-        self.page_3_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.page_3_button.setIcon(QtGui.QIcon("app/static/icons/logs.svg"))
-        self.page_3_button.clicked.connect(self.page_3_button_clicked)
-
-        self.exit_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.exit_button.setIcon(QtGui.QIcon("app/static/icons/logout.svg"))
-        self.exit_button.setIconSize(QtCore.QSize(12, 12))
-        self.exit_button.clicked.connect(self.exit_button_clicked)
 
         def search_button_when_text_changed():
             if self.search_line_edit.text() == "":
                 self.search_button.setEnabled(False)
             else:
                 self.search_button.setEnabled(True)
-
         self.search_button.setEnabled(False)
         self.search_line_edit.textChanged.connect(search_button_when_text_changed)
 
@@ -1730,7 +1173,6 @@ class MainScreen(QMainWindow):
                 self.search_button_clients.setEnabled(False)
             else:
                 self.search_button_clients.setEnabled(True)
-
         self.search_button_clients.setEnabled(False)
         self.search_line_edit_clients.textChanged.connect(search_button_clients_when_text_changed)
 
@@ -1739,7 +1181,6 @@ class MainScreen(QMainWindow):
                 self.search_button_records.setEnabled(False)
             else:
                 self.search_button_records.setEnabled(True)
-
         self.search_button_records.setEnabled(False)
         self.search_line_edit_records.textChanged.connect(search_button_records_when_text_changed)
 
@@ -1766,7 +1207,15 @@ class MainScreen(QMainWindow):
             }
         """)
 
+        self.page_title.setText("Главная")
+
         self.refresh_button_clients.clicked.connect(self.refresh_clients)
+        self.refresh_button_records.clicked.connect(self.refresh_records)
+        self.refresh_button.clicked.connect(self.refresh_organizations)
+        self.search_button_clients.clicked.connect(self.search_clients_clicked)
+        self.search_button.clicked.connect(self.search_organizations_clicked)
+        self.search_button_records.clicked.connect(self.search_records_clicked)
+
 
     def slide_left_menu(self):
         width = self.left_menu_container.width()
@@ -1832,16 +1281,91 @@ class MainScreen(QMainWindow):
     def exit_button_clicked(self):
         print("exit")
 
+    def fill_table_from_dict_clients(self, values_list: list[dict[str: object]]) -> None:
+        self.clients_table.setRowCount(len(values_list))
+        k = 0
+        for client in values_list:
+            id = QTableWidgetItem(str(client["id"]))
+            name = QTableWidgetItem(client["name"])
+            email = QTableWidgetItem(client["email"])
+            password = QTableWidgetItem(client["password"])
+            is_private = QTableWidgetItem(client["is_private"])
+            self.clients_table.setItem(k, 0, id)
+            self.clients_table.setItem(k, 1, name)
+            self.clients_table.setItem(k, 2, email)
+            self.clients_table.setItem(k, 3, password)
+            self.clients_table.setItem(k, 4, is_private)
+            k += 1
+
+    def fill_table_from_dict_records(self, values_list: list[dict[str: object]]) -> None:
+        self.records_table.setRowCount(len(values_list))
+        k = 0
+
+        for record in values_list:
+            id = QTableWidgetItem((str(record["id"])))
+            organization = QTableWidgetItem(str(record["organization"]))
+            organization_title = QTableWidgetItem(str(record["organization_title"]))
+            user_id = QTableWidgetItem(str(record["client"]))
+            user_name = QTableWidgetItem(str(record["client_name"]))
+            accumulated = QTableWidgetItem(str(record["accumulated"]))
+            last_record_date = QTableWidgetItem(str(record["last_record_date"]))
+
+            self.records_table.setItem(k, 0, id)
+            self.records_table.setItem(k, 1, organization)
+            self.records_table.setItem(k, 2, organization_title)
+            self.records_table.setItem(k, 3, user_id)
+            self.records_table.setItem(k, 4, user_name)
+            self.records_table.setItem(k, 5, accumulated)
+            self.records_table.setItem(k, 6, last_record_date)
+
+            k += 1
+
+    def fill_table_from_dict_organizations(self, values_list: list[dict[str: object]]) -> None:
+        self.organizations_table.setRowCount(len(values_list))
+        k = 0
+
+        for record in values_list:
+            id = QTableWidgetItem(str(record["id"]))
+            organization_title = QTableWidgetItem(str(record["title"]))
+            email = QTableWidgetItem(str(record["email"]))
+            password = QTableWidgetItem(str(record["password"]))
+            coupons_limit = QTableWidgetItem(str(record["limit"]))
+            sticker = QTableWidgetItem(str(record["sticker"]))
+            image = "http://127.0.0.1:5000" + str((record["image"]))
+            im = Image.open(requests.get(image, stream=True).raw)
+            image_label = QtWidgets.QLabel()
+            image_label.setScaledContents(True)
+            image_label_size = image_label.size()
+            qt_image = ImageQt(im)
+            pixmap = QtGui.QPixmap.fromImage(qt_image)
+
+            image_label.setPixmap(pixmap)
+
+            '''
+                            brn = QtWidgets.QPushButton("Hey")
+                            brn.setStyleSheet("""
+                                .QPushButton {
+                                    background-color: red;
+                                }
+                                .QPushButton:pressed {
+                                    background-color: blue;
+                                }
+                            """)
+                            self.clients_table.setCellWidget(k, 0, brn)
+                            '''
+            self.organizations_table.setItem(k, 0, id)
+            self.organizations_table.setItem(k, 1, organization_title)
+            self.organizations_table.setItem(k, 2, email)
+            self.organizations_table.setItem(k, 3, password)
+            self.organizations_table.setItem(k, 4, coupons_limit)
+            self.organizations_table.setItem(k, 5, sticker)
+            self.organizations_table.setCellWidget(k, 6, image_label)
+
+            k += 1
+
+
     def refresh_clients(self):
-        self.clients_table.setSortingEnabled(True)
-        self.clients_table.setColumnCount(5)
-        self.clients_table.setHorizontalHeaderLabels([
-            "id",
-            "имя",
-            "email",
-            "пароль",
-            "приватный"
-        ])
+
 
         if not check_server():
 
@@ -1869,39 +1393,121 @@ class MainScreen(QMainWindow):
             app.window.addWidget(app.screens.LoginScreen.LoginScreen())
             app.window.setCurrentIndex(app.window.currentIndex() + 1)
         else:
-            data = response.json()
-            self.clients_table.setRowCount(len(data))
-            k = 0
+            self.clients_data = response.json()
+            for elem in self.clients_data:
+                 elem["is_private"] = "Да" if elem["is_private"] else "Нет"
+            self.fill_table_from_dict_clients(self.clients_data)
 
-            for client in data:
-                id = QTableWidgetItem(str(client["id"]))
-                name = QTableWidgetItem(client["name"])
-                email = QTableWidgetItem(client["email"])
-                password = QTableWidgetItem(client["password"])
-                is_private = QTableWidgetItem("Да" if client["is_private"] else "Нет")
 
-                self.clients_table.setItem(k, 0, id)
 
-                '''
-                brn = QtWidgets.QPushButton("Hey")
-                brn.setStyleSheet("""
-                    .QPushButton {
-                        background-color: red;
-                    }
-                    .QPushButton:pressed {
-                        background-color: blue;
-                    }
-                """)
-                self.clients_table.setCellWidget(k, 0, brn)
-                '''
+    def refresh_records(self):
 
-                self.clients_table.setItem(k, 1, name)
-                self.clients_table.setItem(k, 2, email)
-                self.clients_table.setItem(k, 3, password)
-                self.clients_table.setItem(k, 4, is_private)
 
-                k += 1
+        if not check_server():
 
-        column_width = self.clients_table.width() // 5 - 3
-        for i in range(5):
-            self.clients_table.setColumnWidth(i, column_width)
+            messageBox = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if messageBox == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.get(
+            f"{BASE_URL}/admin/records",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+
+        if response.status_code != 200:
+            QMessageBox.information(
+                self,
+                "Уведомление",
+                "Срок действия сессии истёк"
+            )
+            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
+            app.window.setCurrentIndex(app.window.currentIndex() + 1)
+        else:
+            self.records_data = response.json()
+            self.fill_table_from_dict_records(self.records_data)
+
+    def refresh_organizations(self):
+
+
+        if not check_server():
+
+            messageBox = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if messageBox == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.get(
+            f"{BASE_URL}/admin/organizations",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+        if response.status_code != 200:
+            QMessageBox.information(
+                self,
+                "Уведомление",
+                "Срок действия сессии истёк"
+            )
+            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
+            app.window.setCurrentIndex(app.window.currentIndex() + 1)
+        else:
+            self.organizations_data = response.json()
+            self.fill_table_from_dict_organizations(self.organizations_data)
+
+    def table_clear(self, table_name: QtWidgets.QTableWidget):
+        while (table_name.rowCount() > 0):
+                table_name.removeRow(0)
+
+    def search_in_table(self, values_list: list[dict[str: object]], search_request: str, selected: list) -> list[dict[str: object]]:
+        result: list[dict[str: object]] = list()
+        visited = list()
+        for elem in selected:
+            if elem == None:
+                continue
+            y = elem.row()
+            if search_request in elem.text() and y not in visited:
+                result.append(values_list[y])
+                visited.append(y)
+        return result
+
+    def search_clients_clicked(self):
+        selected = self.clients_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.clients_table.rowCount()):
+                for j in range(self.clients_table.columnCount()):
+                    selected.append(self.clients_table.item(i, j))
+        searched_rows = self.search_in_table(self.clients_data, self.search_line_edit_clients.text(), selected)
+        self.table_clear(self.clients_table)
+        self.fill_table_from_dict_clients(searched_rows)
+
+
+    def search_records_clicked(self):
+        selected = self.records_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.records_table.rowCount()):
+                for j in range(self.records_table.columnCount()):
+                    selected.append(self.records_table.item(i, j))
+        searched_rows = self.search_in_table(self.records_data, self.search_line_edit_records.text(), selected)
+        self.table_clear(self.records_table)
+        self.fill_table_from_dict_records(searched_rows)
+
+    def search_organizations_clicked(self):
+        selected = self.organizations_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.organizations_table.rowCount()):
+                for j in range(self.organizations_table.columnCount()):
+                    selected.append(self.organizations_table.item(i, j))
+        searched_rows = self.search_in_table(self.organizations_data, self.search_line_edit.text(), selected)
+        self.table_clear(self.organizations_table)
+        self.fill_table_from_dict_organizations(searched_rows)
+
+
