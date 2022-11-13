@@ -20,8 +20,16 @@ class MainScreen(QMainWindow):
         self.organizations_data: list[dict[str: object]] = list()
         self.records_data: list[dict[str: object]] = list()
         self.has_access = False
+        self.has_access_text = "Данное поле не рекомендовано к изменению"
+        self.has_no_access_text = "У вас нет прав менять это поле"
 
         self.export_table_name: str = "organizations"
+
+        self.current_table_name = "organizations"
+        self.current_client_id = -1
+        self.clients_table_current_selection = (0, 0)
+        self.clients_table_can_edit = False
+
         self.in_table_cell_alignment = QtCore.Qt.AlignmentFlag.AlignCenter
 
         self.setStyleSheet("""
@@ -1016,6 +1024,11 @@ class MainScreen(QMainWindow):
         self.right_menu.setMinimumSize(QtCore.QSize(250, 0))
         self.right_menu.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.right_menu.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
+        self.right_menu.setStyleSheet("""
+            .QFrame {
+                border-left: 1px solid #575F6E;
+            }
+        """)
         self.right_menu.setObjectName("right_menu")
 
         self.right_menu_stack_layout = QtWidgets.QVBoxLayout(self.right_menu)
@@ -1726,6 +1739,10 @@ class MainScreen(QMainWindow):
                 border-radius: 3px;
                 border: 1px solid #575F6E;
             }
+            QLineEdit:disabled {
+                border: 2px solid #D4D4D4;
+                background-color: #E8E8E8;
+            }
             QLineEdit:hover {
                 background-color: #F6F6F6;
             }
@@ -1739,8 +1756,7 @@ class MainScreen(QMainWindow):
         self.right_menu_button_page_10_2.setMinimumHeight(30)
         self.right_menu_button_page_10_2.setText("DB")
 
-        self.right_menu_main_button_page_2.setMinimumHeight(40)
-        self.right_menu_main_button_page_2.setStyleSheet("""                                                 
+        button_stylesheet = """                                                 
             QPushButton {                                                                            
                 background-color: #007AFF;                                                           
                 color: white;                                                                        
@@ -1755,149 +1771,52 @@ class MainScreen(QMainWindow):
             }                                                                                        
             QPushButton:disabled {                                                                   
                 background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
+                color: grey;
+                border: 2px solid #D4D4D4;                                                                         
             }                                                                                        
-        """)
+        """
+
+        self.right_menu_main_button_page_2.setMinimumHeight(40)
+        self.right_menu_main_button_page_2.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_3.setMinimumHeight(40)
-        self.right_menu_main_button_page_3.setStyleSheet("""
-            QPushButton {
-                background-color: #007AFF;
-                color: white;
-                border-radius: 3px;
-                border: none;
-            }
-            QPushButton:hover {
-                background-color: #1987FE;
-            }
-            QPushButton:pressed {
-                background-color: #62ABFB;
-            }
-            QPushButton:disabled {
-                background-color: #F5F5F5;
-                color: grey;
-            }
-        """)
+        self.right_menu_main_button_page_3.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_4.setMinimumHeight(40)
         self.right_menu_main_button_page_4.setStyleSheet("""                                                 
             QPushButton {                                                                            
-                background-color: #007AFF;                                                           
+                background-color: #FF4545;                                                           
                 color: white;                                                                        
                 border-radius: 3px;
                 border: none;                                                                  
             }                                                                                        
             QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
+                background-color: #FF6363;                                                           
             }                                                                                        
             QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
+                background-color: #FF7676;                                                           
             }                                                                                        
             QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
+                background-color: #FFA6A6;                                                           
+                color: grey;
+                border: 2px solid #D4D4D4;                                                                         
             }                                                                                        
         """)
 
         self.right_menu_main_button_page_7.setMinimumHeight(40)
-        self.right_menu_main_button_page_7.setStyleSheet("""                                                 
-            QPushButton {                                                                            
-                background-color: #007AFF;                                                           
-                color: white;                                                                        
-                border-radius: 3px;
-                border: none;                                                                  
-            }                                                                                        
-            QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
-            }                                                                                        
-            QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
-            }                                                                                        
-            QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
-            }                                                                                        
-        """)
+        self.right_menu_main_button_page_7.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_8.setMinimumHeight(40)
-        self.right_menu_main_button_page_8.setStyleSheet("""                                                 
-            QPushButton {                                                                            
-                background-color: #007AFF;                                                           
-                color: white;                                                                        
-                border-radius: 3px;
-                border: none;                                                                  
-            }                                                                                        
-            QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
-            }                                                                                        
-            QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
-            }                                                                                        
-            QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
-            }                                                                                        
-        """)
+        self.right_menu_main_button_page_8.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_11.setMinimumHeight(40)
-        self.right_menu_main_button_page_11.setStyleSheet("""                                                 
-            QPushButton {                                                                            
-                background-color: #007AFF;                                                           
-                color: white;                                                                        
-                border-radius: 3px;
-                border: none;                                                                  
-            }                                                                                        
-            QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
-            }                                                                                        
-            QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
-            }                                                                                        
-            QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
-            }                                                                                        
-        """)
+        self.right_menu_main_button_page_11.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_12.setMinimumHeight(40)
-        self.right_menu_main_button_page_12.setStyleSheet("""                                                 
-            QPushButton {                                                                            
-                background-color: #007AFF;                                                           
-                color: white;                                                                        
-                border-radius: 3px;
-                border: none;                                                                  
-            }                                                                                        
-            QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
-            }                                                                                        
-            QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
-            }                                                                                        
-            QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
-            }                                                                                        
-        """)
+        self.right_menu_main_button_page_12.setStyleSheet(button_stylesheet)
 
         self.right_menu_main_button_page_13.setMinimumHeight(40)
-        self.right_menu_main_button_page_13.setStyleSheet("""                                                 
-            QPushButton {                                                                            
-                background-color: #007AFF;                                                           
-                color: white;                                                                        
-                border-radius: 3px;
-                border: none;                                                                  
-            }                                                                                        
-            QPushButton:hover {                                                                      
-                background-color: #1987FE;                                                           
-            }                                                                                        
-            QPushButton:pressed {                                                                    
-                background-color: #62ABFB;                                                           
-            }                                                                                        
-            QPushButton:disabled {                                                                   
-                background-color: #F5F5F5;                                                           
-                color: grey;                                                                         
-            }                                                                                        
-        """)
+        self.right_menu_main_button_page_13.setStyleSheet(button_stylesheet)
 
         self.right_menu_input_page_13_1.setMinimumHeight(25)
         self.right_menu_input_page_13_2.setMinimumHeight(25)
@@ -1909,6 +1828,23 @@ class MainScreen(QMainWindow):
         self.right_menu_input_page_11_1.setMinimumHeight(25)
         self.right_menu_input_page_11_2.setMinimumHeight(25)
         self.right_menu_input_page_11_3.setMinimumHeight(25)
+
+        self.right_menu_input_page_2.setMinimumHeight(25)
+        self.right_menu_input_page_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_button_page_2.setMinimumHeight(25)
+        self.right_menu_button_page_2.setMinimumWidth(100)
+
+        self.right_menu_button_page_3.setMinimumHeight(25)
+        self.right_menu_button_page_3.setMinimumWidth(100)
+
+        self.right_menu_input_page_13_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_13_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_12_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_12_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_12_3.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_11_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_11_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_11_3.setTextMargins(5, 0, 5, 0)
 
         if not self.has_access:
             self.add_client_button.setEnabled(False)
@@ -1975,6 +1911,19 @@ class MainScreen(QMainWindow):
         self.right_menu_main_button_page_11.clicked.connect(self.right_menu_create_organization_clicked)
         self.right_menu_main_button_page_13.clicked.connect(self.right_menu_create_record_clicked)
 
+        self.clients_table.itemSelectionChanged.connect(self.right_menu_clients_selection_changed)
+
+
+        self.right_menu_button_page_2.clicked.connect(self.update_input_data_page_2)
+        self.right_menu_input_page_2.textChanged.connect(self.input_data_changed_page_2)
+        self.right_menu_main_button_page_2.clicked.connect(self.update_data_main_button_page_2_clicked)
+
+        self.right_menu_button_page_3.clicked.connect(self.update_input_data_page_3)
+        self.check_box_page_3.stateChanged.connect(self.input_data_changed_page_3)
+        self.right_menu_main_button_page_3.clicked.connect(self.update_data_main_button_page_3_clicked)
+
+        self.right_menu_main_button_page_4.clicked.connect(self.update_data_main_button_page_4_clicked)
+
     # Настройка текста
     def setup_text(self):
         self.left_menu_title.setText("Страницы:")
@@ -2036,30 +1985,21 @@ class MainScreen(QMainWindow):
         self.right_menu_main_button_page_13.setText("Создать")
 
         self.right_menu_title_page_13.setText("Создать запись:")
-        self.right_menu_title_page_12.setText("Создать организацию:")
-        self.right_menu_title_page_11.setText("Создать клиента:")
+        self.right_menu_title_page_12.setText("Создать клиента:")
+        self.right_menu_title_page_11.setText("Создать организацию:")
 
         self.right_menu_input_page_13_1.setPlaceholderText("id клиента")
         self.right_menu_input_page_13_2.setPlaceholderText("id организации")
-
         self.right_menu_input_page_13_1.setPlaceholderText("id клиента")
-        self.right_menu_input_page_13_1.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_13_2.setPlaceholderText("id организации")
-        self.right_menu_input_page_13_2.setTextMargins(5, 0, 5, 0)
-
         self.right_menu_input_page_12_1.setPlaceholderText("Имя")
-        self.right_menu_input_page_12_1.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_12_2.setPlaceholderText("Email")
-        self.right_menu_input_page_12_2.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_12_3.setPlaceholderText("Пароль")
-        self.right_menu_input_page_12_3.setTextMargins(5, 0, 5, 0)
-
         self.right_menu_input_page_11_1.setPlaceholderText("Название")
-        self.right_menu_input_page_11_1.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_11_2.setPlaceholderText("Email")
-        self.right_menu_input_page_11_2.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_11_3.setPlaceholderText("Пароль")
-        self.right_menu_input_page_11_3.setTextMargins(5, 0, 5, 0)
+
+        self.right_menu_main_button_page_4.setText("Удалить клиента")
 
     # Настройка header-ов таблиц
     def setup_tables(self, table_name: str):
@@ -2516,8 +2456,6 @@ class MainScreen(QMainWindow):
             }
         )
 
-        print(response.json())
-
         if response.status_code != 200:
             QMessageBox.warning(
                 self,
@@ -2618,6 +2556,154 @@ class MainScreen(QMainWindow):
                 "Запись создана"
             )
 
+    # Страница правого меню - кнопка разрешения редактирования
+    def update_input_data_page_2(self):
+        self.right_menu_input_page_2.setEnabled(not self.right_menu_input_page_2.isEnabled())
+
+    def update_input_data_page_3(self):
+        self.check_box_page_3.setEnabled(not self.check_box_page_3.isEnabled())
+
+    def update_data_main_button_page_2_clicked(self):
+
+        headers = ["id", "name", "email", "password", "is_private"]
+
+        if self.current_table_name == "clients":
+
+            if not check_server():
+
+                message_box = QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось подключиться к серверу",
+                    QMessageBox.StandardButton.Abort
+                )
+
+                if message_box == QMessageBox.StandardButton.Abort:
+                    exit(-1)
+
+            _json = {"id": self.current_client_id}
+            _key = headers[self.clients_table_current_selection[1]]
+            _value = self.right_menu_input_page_2.text()
+            _json[_key] = _value
+
+            response = requests.put(
+                f"{BASE_URL}/admin/clients/update",
+                headers={"x-access-token": app.storage.get_value(key="token")},
+                json=_json
+            )
+
+            if response.status_code != 200:
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "Что-то введено некорректно"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Готово",
+                    "Данные обновлены"
+                )
+
+    def update_data_main_button_page_3_clicked(self):
+
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        _json = {"id": self.current_client_id, "is_private": self.check_box_page_3.isChecked()}
+
+        response = requests.put(
+            f"{BASE_URL}/admin/clients/update",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json=_json
+        )
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Данные обновлены"
+            )
+
+    def update_data_main_button_page_4_clicked(self):
+
+        question = QMessageBox.question(
+            self,
+            "Подтверждение",
+            "Вы уверены, что хотите удалить этого клиента?",
+            QMessageBox.StandardButton.Yes |
+            QMessageBox.StandardButton.No
+        )
+        if question == QMessageBox.StandardButton.No:
+            return
+
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.post(
+            f"{BASE_URL}/admin/clients/remove",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json={"id": self.current_client_id}
+        )
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Клиент удалён"
+            )
+
+    def input_data_changed_page_2(self):
+        before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+        if self.right_menu_input_page_2.text() != before:
+            self.right_menu_main_button_page_2.setEnabled(True)
+        else:
+            self.right_menu_main_button_page_2.setEnabled(False)
+
+    def input_data_changed_page_3(self):
+        checked = self.check_box_page_3.isChecked()
+        _b = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+        before = _b == "Да"
+        if checked != before:
+            self.right_menu_main_button_page_3.setEnabled(True)
+        else:
+            self.right_menu_main_button_page_3.setEnabled(False)
+
+        if self.check_box_page_3.isChecked():
+            self.check_box_page_3.setText("Приватный")
+        else:
+            self.check_box_page_3.setText("Стандартный")
+
     # Экспорт csv - кнопка
     def export_as_csv_clicked(self) -> None:
         print(f"csv {self.export_table_name}")
@@ -2626,8 +2712,112 @@ class MainScreen(QMainWindow):
     def export_as_db_clicked(self) -> None:
         print(f"db {self.export_table_name}")
 
+    # Страница правого меню - смена выбранных ячеек - event
+    def right_menu_clients_selection_changed(self):
+
+        selected = self.clients_table.selectedItems()
+
+        if len(selected) == 1:
+
+            self.current_client_id = self.clients_table.item(selected[0].row(), 0).text()
+            self.clients_table_current_selection = (selected[0].row(), selected[0].column())
+
+            if selected[0].column() == 0:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.clients_table_can_edit = False
+
+                self.right_menu_title_page_2.setText("Id:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(False)  # edit button
+
+                self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 1:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.clients_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Имя:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 2:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.clients_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Почта:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 3:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.clients_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Пароль:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 4:
+                self.right_menu_stack.setCurrentIndex(2)
+                self.clients_table_can_edit = True
+                self.right_menu_title_page_3.setText("Приватность:")
+                if selected[0].text() == "Да":
+                    self.check_box_page_3.setChecked(True)
+                    self.check_box_page_3.setText("Приватный")
+                else:
+                    self.check_box_page_3.setChecked(False)
+                    self.check_box_page_3.setText("Стандартный")
+                self.check_box_page_3.setEnabled(False)
+                self.right_menu_main_button_page_3.setEnabled(False)
+                self.right_menu_button_page_3.setEnabled(self.has_access)
+                if self.has_access:
+                    self.right_menu_sub_text_page_3.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_3.setText(self.has_no_access_text)
+
+        elif len(selected) == self.clients_table.columnCount() and len(set([item.row() for item in selected])) == 1:
+            self.current_client_id = self.clients_table.item(selected[0].row(), 0).text()
+
+            self.right_menu_stack.setCurrentIndex(3)
+            self.clients_table_can_edit = True
+
+            self.right_menu_title_page_4.setText("Удалить организацию:")
+            if self.has_access:
+                self.right_menu_sub_text_page_4.setText("Удаление клиентов не рекомендовано")
+            else:
+                self.right_menu_sub_text_page_4.setText("Вы не имеете право удалять клиентов")
+                self.right_menu_main_button_page_4.setEnabled(False)
+        else:
+            self.right_menu_stack.setCurrentIndex(0)
+
     # Смена вкладки - event
     def tab_changed(self) -> None:
+
+        if self.tabWidget.currentIndex() == 0:
+            self.current_table_name = "organizations"
+        elif self.tabWidget.currentIndex() == 1:
+            self.current_table_name = "clients"
+        elif self.tabWidget.currentIndex() == 2:
+            self.current_table_name = "records"
 
         if self.right_menu_stack.currentIndex() == 9:
             if self.tabWidget.currentIndex() == 0:
