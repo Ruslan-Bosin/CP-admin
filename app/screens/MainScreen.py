@@ -19,6 +19,10 @@ class MainScreen(QMainWindow):
         self.clients_data: list[dict[str: object]] = list()
         self.organizations_data: list[dict[str: object]] = list()
         self.records_data: list[dict[str: object]] = list()
+        self.has_access = False
+
+        self.export_table_name: str = "organizations"
+        self.in_table_cell_alignment = QtCore.Qt.AlignmentFlag.AlignCenter
 
         self.setStyleSheet("""
             * {
@@ -582,11 +586,11 @@ class MainScreen(QMainWindow):
         self.horizontalLayout_5.addItem(spacer_item9)
 
         # Sort Button
-        self.sort_button = QtWidgets.QPushButton(self.organizations_layout)
-        self.sort_button.setMinimumHeight(self.search_line_edit.height() - 7)
-        self.sort_button.setMinimumWidth(80)
-        self.sort_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.sort_button.setStyleSheet("""
+        self.add_organization_button = QtWidgets.QPushButton(self.organizations_layout)
+        self.add_organization_button.setMinimumHeight(self.search_line_edit.height() - 7)
+        self.add_organization_button.setMinimumWidth(80)
+        self.add_organization_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.add_organization_button.setStyleSheet("""
             QPushButton {
                 background-color: #E7E7E7;
                 border: 2px solid #D4D4D4;
@@ -600,9 +604,9 @@ class MainScreen(QMainWindow):
                 background-color: #DBDBDB;
             }
         """)
-        self.sort_button.setObjectName("sort_button")
+        self.add_organization_button.setObjectName("add_organization_button")
 
-        self.horizontalLayout_5.addWidget(self.sort_button)
+        self.horizontalLayout_5.addWidget(self.add_organization_button)
 
         # Save button
         self.save_button = QtWidgets.QPushButton(self.organizations_layout)
@@ -737,11 +741,11 @@ class MainScreen(QMainWindow):
         self.top_panel_clients.addItem(spacer_item10)
 
         # Sort Button Clients
-        self.sort_button_clients = QtWidgets.QPushButton(self.clients_layout)
-        self.sort_button_clients.setMinimumHeight(self.search_line_edit_clients.height() - 7)
-        self.sort_button_clients.setMinimumWidth(80)
-        self.sort_button_clients.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.sort_button_clients.setStyleSheet("""
+        self.add_client_button = QtWidgets.QPushButton(self.clients_layout)
+        self.add_client_button.setMinimumHeight(self.search_line_edit_clients.height() - 7)
+        self.add_client_button.setMinimumWidth(80)
+        self.add_client_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.add_client_button.setStyleSheet("""
             QPushButton {
                 background-color: #E7E7E7;
                 border: 2px solid #D4D4D4;
@@ -755,9 +759,9 @@ class MainScreen(QMainWindow):
                 background-color: #DBDBDB;
             }
         """)
-        self.sort_button_clients.setObjectName("sort_button_clients")
+        self.add_client_button.setObjectName("add_client_button")
 
-        self.top_panel_clients.addWidget(self.sort_button_clients)
+        self.top_panel_clients.addWidget(self.add_client_button)
 
         # Save Button Clients
         self.save_button_clients = QtWidgets.QPushButton(self.clients_layout)
@@ -892,11 +896,11 @@ class MainScreen(QMainWindow):
         self.top_panel_records.addItem(spacer_item11)
 
         # Sort Button Records
-        self.sort_button_records = QtWidgets.QPushButton(self.records_layout)
-        self.sort_button_records.setMinimumHeight(self.search_line_edit_records.height() - 7)
-        self.sort_button_records.setMinimumWidth(80)
-        self.sort_button_records.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.sort_button_records.setStyleSheet("""
+        self.add_record_button = QtWidgets.QPushButton(self.records_layout)
+        self.add_record_button.setMinimumHeight(self.search_line_edit_records.height() - 7)
+        self.add_record_button.setMinimumWidth(80)
+        self.add_record_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.add_record_button.setStyleSheet("""
             QPushButton {
                 background-color: #E7E7E7;
                 border: 2px solid #D4D4D4;
@@ -910,9 +914,9 @@ class MainScreen(QMainWindow):
                 background-color: #DBDBDB;
             }
         """)
-        self.sort_button_records.setObjectName("sort_button_records")
+        self.add_record_button.setObjectName("add_record_button")
 
-        self.top_panel_records.addWidget(self.sort_button_records)
+        self.top_panel_records.addWidget(self.add_record_button)
 
         # Save Button Records
         self.save_button_records = QtWidgets.QPushButton(self.records_layout)
@@ -1137,7 +1141,7 @@ class MainScreen(QMainWindow):
         self.page_4_right_menu = QtWidgets.QWidget()
         self.page_4_right_menu.setObjectName("page_4_right_menu")
         self.right_menu_vertical_layout_page_4 = QtWidgets.QVBoxLayout(self.page_4_right_menu)
-        self.right_menu_vertical_layout_page_4.setSpacing(9)
+        self.right_menu_vertical_layout_page_4.setSpacing(10)
         self.right_menu_vertical_layout_page_4.setObjectName("right_menu_vertical_layout_page_4")
         spacer_item4 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                              QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1153,13 +1157,13 @@ class MainScreen(QMainWindow):
         self.right_menu_vertical_layout_page_4.addWidget(self.right_menu_title_page_4)
         self.complex_layout_page_4 = QtWidgets.QHBoxLayout()
         self.complex_layout_page_4.setObjectName("complex_layout_page_4")
-        self.change_data_button_page_4 = QtWidgets.QPushButton(self.page_4_right_menu)
+        self.right_menu_main_button_page_4 = QtWidgets.QPushButton(self.page_4_right_menu)
         font = QtGui.QFont()
         font.setFamily("Arial")
-        self.change_data_button_page_4.setFont(font)
-        self.change_data_button_page_4.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.change_data_button_page_4.setObjectName("change_data_button_page_4")
-        self.complex_layout_page_4.addWidget(self.change_data_button_page_4)
+        self.right_menu_main_button_page_4.setFont(font)
+        self.right_menu_main_button_page_4.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.right_menu_main_button_page_4.setObjectName("change_data_button_page_4")
+        self.complex_layout_page_4.addWidget(self.right_menu_main_button_page_4)
         self.right_menu_vertical_layout_page_4.addLayout(self.complex_layout_page_4)
         self.right_menu_sub_text_page_4 = QtWidgets.QLabel(self.page_4_right_menu)
         font = QtGui.QFont()
@@ -1174,6 +1178,7 @@ class MainScreen(QMainWindow):
         self.page_5_right_menu = QtWidgets.QWidget()
         self.page_5_right_menu.setObjectName("page_5_right_menu")
         self.right_menu_vertical_layout_page_5 = QtWidgets.QVBoxLayout(self.page_5_right_menu)
+        self.right_menu_vertical_layout_page_5.addSpacing(10)
         self.right_menu_vertical_layout_page_5.setObjectName("right_menu_vertical_layout_page_5")
         spacer_item6 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                              QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1228,6 +1233,7 @@ class MainScreen(QMainWindow):
         self.page_6_right_menu = QtWidgets.QWidget()
         self.page_6_right_menu.setObjectName("page_6_right_menu")
         self.right_menu_vertical_layout_page_6 = QtWidgets.QVBoxLayout(self.page_6_right_menu)
+        self.right_menu_vertical_layout_page_6.addSpacing(10)
         self.right_menu_vertical_layout_page_6.setObjectName("right_menu_vertical_layout_page_6")
         spacer_item9 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                              QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1355,6 +1361,7 @@ class MainScreen(QMainWindow):
         self.page_8_right_menu = QtWidgets.QWidget()
         self.page_8_right_menu.setObjectName("page_8_right_menu")
         self.right_menu_vertical_layout_page_8 = QtWidgets.QVBoxLayout(self.page_8_right_menu)
+        self.right_menu_vertical_layout_page_8.addSpacing(10)
         self.right_menu_vertical_layout_page_8.setObjectName("right_menu_vertical_layout_page_8")
         spacer_item14 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1404,6 +1411,7 @@ class MainScreen(QMainWindow):
         self.page_9_right_menu = QtWidgets.QWidget()
         self.page_9_right_menu.setObjectName("page_9_right_menu")
         self.right_menu_vertical_layout_page_9 = QtWidgets.QVBoxLayout(self.page_9_right_menu)
+        self.right_menu_vertical_layout_page_9.addSpacing(10)
         self.right_menu_vertical_layout_page_9.setObjectName("right_menu_vertical_layout_page_9")
         spacer_item16 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1459,6 +1467,7 @@ class MainScreen(QMainWindow):
         self.page_10_right_menu = QtWidgets.QWidget()
         self.page_10_right_menu.setObjectName("page_10_right_menu")
         self.right_menu_vertical_layout_page_10 = QtWidgets.QVBoxLayout(self.page_10_right_menu)
+        self.right_menu_vertical_layout_page_10.setSpacing(10)
         self.right_menu_vertical_layout_page_10.setObjectName("right_menu_vertical_layout_page_10")
         spacer_item18 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1496,6 +1505,7 @@ class MainScreen(QMainWindow):
         self.page_11_right_menu = QtWidgets.QWidget()
         self.page_11_right_menu.setObjectName("page_11_right_menu")
         self.right_menu_vertical_layout_page_11 = QtWidgets.QVBoxLayout(self.page_11_right_menu)
+        self.right_menu_vertical_layout_page_11.addSpacing(10)
         self.right_menu_vertical_layout_page_11.setObjectName("right_menu_vertical_layout_page_11")
         spacer_item20 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1542,6 +1552,7 @@ class MainScreen(QMainWindow):
         self.page_12_right_menu = QtWidgets.QWidget()
         self.page_12_right_menu.setObjectName("page_12_right_menu")
         self.right_menu_vertical_layout_page_12 = QtWidgets.QVBoxLayout(self.page_12_right_menu)
+        self.right_menu_vertical_layout_page_12.addSpacing(10)
         self.right_menu_vertical_layout_page_12.setObjectName("right_menu_vertical_layout_page_12")
         spacer_item22 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1588,6 +1599,7 @@ class MainScreen(QMainWindow):
         self.page_13_right_menu = QtWidgets.QWidget()
         self.page_13_right_menu.setObjectName("page_13_right_menu")
         self.right_menu_vertical_layout_page_13 = QtWidgets.QVBoxLayout(self.page_13_right_menu)
+        self.right_menu_vertical_layout_page_13.setSpacing(10)
         self.right_menu_vertical_layout_page_13.setObjectName("right_menu_vertical_layout_page_13")
         spacer_item24 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Policy.Minimum,
                                               QtWidgets.QSizePolicy.Policy.Fixed)
@@ -1641,7 +1653,6 @@ class MainScreen(QMainWindow):
 
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        self.setup_ui()
         self.setup_connects()
         self.setup_text()
         self.setup_tables("clients")
@@ -1649,6 +1660,11 @@ class MainScreen(QMainWindow):
         self.setup_tables("organizations")
         self.setup_stacks_and_tabs()
         self.setup_admin_info()
+        self.setup_ui()
+
+        # self.refresh_clients()
+        # self.refresh_organizations()
+        # self.refresh_records()
 
     # Настройка ui
     def setup_ui(self):
@@ -1692,6 +1708,213 @@ class MainScreen(QMainWindow):
             }
         """)
 
+        self.right_menu_stack.setStyleSheet("""
+            QPushButton {
+                background-color: #E7E7E7;
+                border: 2px solid #D4D4D4;
+                border-radius: 3px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                border: 2px solid #BABABA;
+            }
+            QPushButton:pressed {
+                background-color: #DBDBDB;
+            }
+            QLineEdit {
+                background-color: white;
+                border-radius: 3px;
+                border: 1px solid #575F6E;
+            }
+            QLineEdit:hover {
+                background-color: #F6F6F6;
+            }
+            QLineEdit:focus {
+                background-color: #F2F2F2;
+            }
+        """)
+
+        self.right_menu_button_page_10_1.setMinimumHeight(30)
+        self.right_menu_button_page_10_1.setText("SCV")
+        self.right_menu_button_page_10_2.setMinimumHeight(30)
+        self.right_menu_button_page_10_2.setText("DB")
+
+        self.right_menu_main_button_page_2.setMinimumHeight(40)
+        self.right_menu_main_button_page_2.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_3.setMinimumHeight(40)
+        self.right_menu_main_button_page_3.setStyleSheet("""
+            QPushButton {
+                background-color: #007AFF;
+                color: white;
+                border-radius: 3px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #1987FE;
+            }
+            QPushButton:pressed {
+                background-color: #62ABFB;
+            }
+            QPushButton:disabled {
+                background-color: #F5F5F5;
+                color: grey;
+            }
+        """)
+
+        self.right_menu_main_button_page_4.setMinimumHeight(40)
+        self.right_menu_main_button_page_4.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_7.setMinimumHeight(40)
+        self.right_menu_main_button_page_7.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_8.setMinimumHeight(40)
+        self.right_menu_main_button_page_8.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_11.setMinimumHeight(40)
+        self.right_menu_main_button_page_11.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_12.setMinimumHeight(40)
+        self.right_menu_main_button_page_12.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_main_button_page_13.setMinimumHeight(40)
+        self.right_menu_main_button_page_13.setStyleSheet("""                                                 
+            QPushButton {                                                                            
+                background-color: #007AFF;                                                           
+                color: white;                                                                        
+                border-radius: 3px;
+                border: none;                                                                  
+            }                                                                                        
+            QPushButton:hover {                                                                      
+                background-color: #1987FE;                                                           
+            }                                                                                        
+            QPushButton:pressed {                                                                    
+                background-color: #62ABFB;                                                           
+            }                                                                                        
+            QPushButton:disabled {                                                                   
+                background-color: #F5F5F5;                                                           
+                color: grey;                                                                         
+            }                                                                                        
+        """)
+
+        self.right_menu_input_page_13_1.setMinimumHeight(25)
+        self.right_menu_input_page_13_2.setMinimumHeight(25)
+
+        self.right_menu_input_page_12_1.setMinimumHeight(25)
+        self.right_menu_input_page_12_2.setMinimumHeight(25)
+        self.right_menu_input_page_12_3.setMinimumHeight(25)
+
+        self.right_menu_input_page_11_1.setMinimumHeight(25)
+        self.right_menu_input_page_11_2.setMinimumHeight(25)
+        self.right_menu_input_page_11_3.setMinimumHeight(25)
+
+        if not self.has_access:
+            self.add_client_button.setEnabled(False)
+            self.add_organization_button.setEnabled(False)
+            self.add_record_button.setEnabled(False)
+
     # Настройка подключений
     def setup_connects(self):
         self.refresh_button_clients.clicked.connect(self.refresh_clients)
@@ -1710,6 +1933,8 @@ class MainScreen(QMainWindow):
 
         self.open_left_menu_button.clicked.connect(self.slide_left_menu)
         self.open_right_menu_button.clicked.connect(self.slide_right_menu)
+
+        self.tabWidget.currentChanged.connect(self.tab_changed)
 
         def search_button_when_text_changed():
             if self.search_line_edit.text() == "":
@@ -1735,6 +1960,21 @@ class MainScreen(QMainWindow):
 
         self.search_line_edit_records.textChanged.connect(search_button_records_when_text_changed)
 
+        self.save_button.clicked.connect(lambda _: self.right_menu_export_clicked("organizations"))
+        self.save_button_clients.clicked.connect(lambda _: self.right_menu_export_clicked("clients"))
+        self.save_button_records.clicked.connect(lambda _: self.right_menu_export_clicked("records"))
+
+        self.right_menu_button_page_10_1.clicked.connect(self.export_as_csv_clicked)
+        self.right_menu_button_page_10_2.clicked.connect(self.export_as_db_clicked)
+
+        self.add_client_button.clicked.connect(lambda _: self.right_menu_add_clicked("clients"))
+        self.add_organization_button.clicked.connect(lambda _: self.right_menu_add_clicked("organizations"))
+        self.add_record_button.clicked.connect(lambda _: self.right_menu_add_clicked("records"))
+
+        self.right_menu_main_button_page_11.clicked.connect(self.right_menu_create_client_clicked)
+        self.right_menu_main_button_page_12.clicked.connect(self.right_menu_create_organization_clicked)
+        self.right_menu_main_button_page_13.clicked.connect(self.right_menu_create_record_clicked)
+
     # Настройка текста
     def setup_text(self):
         self.left_menu_title.setText("Страницы:")
@@ -1745,17 +1985,17 @@ class MainScreen(QMainWindow):
         self.page_title.setText("Название")
         self.search_line_edit.setPlaceholderText("Поиск")
         self.search_button.setText("Поиск")
-        self.sort_button.setText("Сортировка")
+        self.add_organization_button.setText("Добавить")
         self.save_button.setText("Экспорт")
         self.refresh_button.setText("Обновить")
         self.search_line_edit_clients.setPlaceholderText("Поиск")
         self.search_button_clients.setText("Поиск")
-        self.sort_button_clients.setText("Сортировка")
+        self.add_client_button.setText("Добавить")
         self.save_button_clients.setText("Экспорт")
         self.refresh_button_clients.setText("Обновить")
         self.search_line_edit_records.setPlaceholderText("Поиск")
         self.search_button_records.setText("Поиск")
-        self.sort_button_records.setText("Сортировка")
+        self.add_record_button.setText("Добавить")
         self.save_button_records.setText("Экспорт")
         self.refresh_button_records.setText("Обновить")
         self.account_label.setText("Профиль")
@@ -1790,6 +2030,36 @@ class MainScreen(QMainWindow):
         self.right_menu_main_button_page_8.setText("Сохранить изменения")
         self.check_box_page_3.setText("Приватный")
         self.page_title.setText("Главная")
+
+        self.right_menu_main_button_page_11.setText("Создать")
+        self.right_menu_main_button_page_12.setText("Создать")
+        self.right_menu_main_button_page_13.setText("Создать")
+
+        self.right_menu_title_page_13.setText("Создать запись:")
+        self.right_menu_title_page_12.setText("Создать организацию:")
+        self.right_menu_title_page_11.setText("Создать клиента:")
+
+        self.right_menu_input_page_13_1.setPlaceholderText("id клиента")
+        self.right_menu_input_page_13_2.setPlaceholderText("id организации")
+
+        self.right_menu_input_page_13_1.setPlaceholderText("id клиента")
+        self.right_menu_input_page_13_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_13_2.setPlaceholderText("id организации")
+        self.right_menu_input_page_13_2.setTextMargins(5, 0, 5, 0)
+
+        self.right_menu_input_page_12_1.setPlaceholderText("Название")
+        self.right_menu_input_page_12_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_12_2.setPlaceholderText("Email")
+        self.right_menu_input_page_12_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_12_3.setPlaceholderText("Пароль")
+        self.right_menu_input_page_12_3.setTextMargins(5, 0, 5, 0)
+
+        self.right_menu_input_page_11_1.setPlaceholderText("Имя")
+        self.right_menu_input_page_11_1.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_11_2.setPlaceholderText("Email")
+        self.right_menu_input_page_11_2.setTextMargins(5, 0, 5, 0)
+        self.right_menu_input_page_11_3.setPlaceholderText("Пароль")
+        self.right_menu_input_page_11_3.setTextMargins(5, 0, 5, 0)
 
     # Настройка header-ов таблиц
     def setup_tables(self, table_name: str):
@@ -1831,7 +2101,7 @@ class MainScreen(QMainWindow):
     # Настройка default-ных страниц и вкладок
     def setup_stacks_and_tabs(self):
         self.body_stack.setCurrentIndex(1)
-        self.right_menu_stack.setCurrentIndex(3)
+        self.right_menu_stack.setCurrentIndex(0)
         self.tabWidget.setCurrentIndex(0)
 
     # Анимация - левое меню
@@ -1851,12 +2121,18 @@ class MainScreen(QMainWindow):
         self.animation_left_menu.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuart)
         self.animation_left_menu.start()
 
+    # Получения информации о состоянии левого меню
+    def left_menu_is_open(self) -> bool:
+        if self.left_menu_container.width() == 0:
+            return False
+        return True
+
     # Анимация - правое меню
     def slide_right_menu(self):
         width = self.right_menu_container.width()
 
         if width == 0:
-            new_width = 600
+            new_width = 500
             self.open_right_menu_button.setIcon(QtGui.QIcon("app/static/icons/right_arrow.svg"))
         else:
             new_width = 0
@@ -1867,6 +2143,12 @@ class MainScreen(QMainWindow):
         self.animation_right_menu.setEndValue(new_width)
         self.animation_right_menu.setEasingCurve(QtCore.QEasingCurve.Type.InOutQuart)
         self.animation_right_menu.start()
+
+    # Получения информации о состоянии правого меню
+    def right_menu_is_open(self) -> bool:
+        if self.right_menu_container.width() == 0:
+            return False
+        return True
 
     # Отображения таблицы - выравнивание столбцов
     def resize_columns(self, table: QtWidgets.QTableWidget) -> None:
@@ -1882,10 +2164,15 @@ class MainScreen(QMainWindow):
 
         for client in values_list:
             client_id = QTableWidgetItem(str(client["id"]))
+            client_id.setTextAlignment(self.in_table_cell_alignment)
             name = QTableWidgetItem(client["name"])
+            name.setTextAlignment(self.in_table_cell_alignment)
             email = QTableWidgetItem(client["email"])
+            email.setTextAlignment(self.in_table_cell_alignment)
             password = QTableWidgetItem(client["password"])
-            is_private = QTableWidgetItem(client["is_private"])
+            password.setTextAlignment(self.in_table_cell_alignment)
+            is_private = QTableWidgetItem("Да" if client["is_private"] else "Нет")
+            is_private.setTextAlignment(self.in_table_cell_alignment)
 
             self.clients_table.setItem(k, 0, client_id)
             self.clients_table.setItem(k, 1, name)
@@ -1904,11 +2191,17 @@ class MainScreen(QMainWindow):
         for record in values_list:
 
             organization_id = QTableWidgetItem(str(record["id"]))
+            organization_id.setTextAlignment(self.in_table_cell_alignment)
             organization_title = QTableWidgetItem(str(record["title"]))
+            organization_title.setTextAlignment(self.in_table_cell_alignment)
             email = QTableWidgetItem(str(record["email"]))
+            email.setTextAlignment(self.in_table_cell_alignment)
             password = QTableWidgetItem(str(record["password"]))
+            password.setTextAlignment(self.in_table_cell_alignment)
             coupons_limit = QTableWidgetItem(str(record["limit"]))
+            coupons_limit.setTextAlignment(self.in_table_cell_alignment)
             sticker = QTableWidgetItem(str(record["sticker"]))
+            sticker.setTextAlignment(self.in_table_cell_alignment)
             image_url = BASE_URL_IMAGE + str(record["image"])
 
             if record["image"]:
@@ -1921,6 +2214,7 @@ class MainScreen(QMainWindow):
             else:
                 image_label = QtWidgets.QLabel()
                 image_label.setText("Нет")
+                image_label.setAlignment(self.in_table_cell_alignment)
 
             self.organizations_table.setItem(k, 0, organization_id)
             self.organizations_table.setItem(k, 1, organization_title)
@@ -1940,12 +2234,19 @@ class MainScreen(QMainWindow):
         k = 0
         for record in values_list:
             record_id = QTableWidgetItem((str(record["id"])))
+            record_id.setTextAlignment(self.in_table_cell_alignment)
             organization = QTableWidgetItem(str(record["organization"]))
+            organization.setTextAlignment(self.in_table_cell_alignment)
             organization_title = QTableWidgetItem(str(record["organization_title"]))
+            organization_title.setTextAlignment(self.in_table_cell_alignment)
             user_id = QTableWidgetItem(str(record["client"]))
+            user_id.setTextAlignment(self.in_table_cell_alignment)
             user_name = QTableWidgetItem(str(record["client_name"]))
+            user_name.setTextAlignment(self.in_table_cell_alignment)
             accumulated = QTableWidgetItem(str(record["accumulated"]))
+            accumulated.setTextAlignment(self.in_table_cell_alignment)
             last_record_date = QTableWidgetItem(str(record["last_record_date"]))
+            last_record_date.setTextAlignment(self.in_table_cell_alignment)
 
             self.records_table.setItem(k, 0, record_id)
             self.records_table.setItem(k, 1, organization)
@@ -1987,8 +2288,6 @@ class MainScreen(QMainWindow):
             app.window.setCurrentIndex(app.window.currentIndex() + 1)
         else:
             self.clients_data = response.json()
-            for elem in self.clients_data:
-                elem["is_private"] = "Да" if elem["is_private"] else "Нет"
             self.fill_table_from_dict_clients(self.clients_data)
 
             self.resize_columns(self.clients_table)
@@ -2161,6 +2460,107 @@ class MainScreen(QMainWindow):
             app.storage.remove_key("token")
             exit(0)
 
+    # Страница правого меню - экспорт - кнопка
+    def right_menu_export_clicked(self, table_name: str, should_open=True) -> None:
+
+        self.right_menu_stack.setCurrentIndex(9)
+
+        if table_name == "organizations":
+            self.right_menu_title_page_10.setText("Экспорт организаций:")
+        elif table_name == "clients":
+            self.right_menu_title_page_10.setText("Экспорт клиентов:")
+        elif table_name == "records":
+            self.right_menu_title_page_10.setText("Экспорт записей:")
+        self.export_table_name = table_name
+
+        if not self.right_menu_is_open() and should_open:
+            self.slide_right_menu()
+
+    # Страница правого меню - экспорт - кнопка
+    def right_menu_add_clicked(self, table_name: str, should_open=True) -> None:
+
+        if table_name == "organizations":
+            self.right_menu_stack.setCurrentIndex(10)
+        elif table_name == "clients":
+            self.right_menu_stack.setCurrentIndex(11)
+        elif table_name == "records":
+            self.right_menu_stack.setCurrentIndex(12)
+
+        if not self.right_menu_is_open() and should_open:
+            self.slide_right_menu()
+
+    # Страница правого меню - регистрация клиента - кнопка
+    def right_menu_create_client_clicked(self):
+        print(1)
+
+    # Страница правого меню - регистрация организации - кнопка
+    def right_menu_create_organization_clicked(self):
+        print(2)
+
+    # Страница правого меню - регистрация записи - кнопка
+    def right_menu_create_record_clicked(self):
+
+        client_id = self.right_menu_input_page_13_1.text()
+        organization_id = self.right_menu_input_page_13_2.text()
+
+
+
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.get(
+            f"{BASE_URL}/admin/create/record",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json={"email": client_id,
+                  'password': organization_id}
+        )
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            pass
+
+    # Экспорт csv - кнопка
+    def export_as_csv_clicked(self) -> None:
+        print(f"csv {self.export_table_name}")
+
+    # Экспорт db - кнопка
+    def export_as_db_clicked(self) -> None:
+        print(f"db {self.export_table_name}")
+
+    # Смена вкладки - event
+    def tab_changed(self) -> None:
+
+        if self.right_menu_stack.currentIndex() == 9:
+            if self.tabWidget.currentIndex() == 0:
+                self.right_menu_export_clicked("organizations", False)
+            elif self.tabWidget.currentIndex() == 1:
+                self.right_menu_export_clicked("clients", False)
+            elif self.tabWidget.currentIndex() == 2:
+                self.right_menu_export_clicked("records", False)
+        if self.right_menu_stack.currentIndex() in [12, 11, 10]:
+            if self.tabWidget.currentIndex() == 0:
+                self.right_menu_add_clicked("organizations", False)
+            elif self.tabWidget.currentIndex() == 1:
+                self.right_menu_add_clicked("clients", False)
+            elif self.tabWidget.currentIndex() == 2:
+                self.right_menu_add_clicked("records", False)
+
+        # self.right_menu_stack.setCurrentIndex(0)
+
     # Запрос на редактирование - кнопка
     def request_editing_clicked(self):
         question = QMessageBox.question(
@@ -2211,6 +2611,8 @@ class MainScreen(QMainWindow):
         if response["can_edit"]:
             self.editing.setChecked(True)
             self.editing_button.setEnabled(False)
+
+            self.has_access = True
         else:
             self.editing.setChecked(False)
             self.editing.setText("Запрещено")
