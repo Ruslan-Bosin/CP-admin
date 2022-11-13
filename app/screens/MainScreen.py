@@ -2,16 +2,24 @@ import requests
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from PyQt6.QtCore import QPropertyAnimation
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtGui import QIcon, QFont, QPixmap, QMovie, QRegion
 from config import BASE_URL
 import app
 from app import logger
 from app.utils.check_server import check_server
+from PIL import Image
+import requests
+from PIL.ImageQt import ImageQt
+from app.utils.exception_hook import exception_hook
+
 
 
 class MainScreen(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.clients_data: list[dict[str: object]] = list()
 
         self.setStyleSheet("""
             * {
@@ -802,7 +810,6 @@ class MainScreen(QMainWindow):
         self.clients_table.setObjectName("clients_table")
         self.clients_table.setColumnCount(0)
         self.clients_table.setRowCount(0)
-        self.clients_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self.verticalLayout_6.addWidget(self.clients_table)
 
@@ -953,12 +960,12 @@ class MainScreen(QMainWindow):
         self.verticalLayout_7.addLayout(self.top_panel_records)
 
         # Table Widget
-        self.tableWidget = QtWidgets.QTableWidget(self.records_layout)
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(0)
-        self.tableWidget.setRowCount(0)
+        self.records_table = QtWidgets.QTableWidget(self.records_layout)
+        self.records_table.setObjectName("tableWidget")
+        self.records_table.setColumnCount(0)
+        self.records_table.setRowCount(0)
 
-        self.verticalLayout_7.addWidget(self.tableWidget)
+        self.verticalLayout_7.addWidget(self.records_table)
 
         self.tabWidget.addTab(self.records_layout, "")
 
@@ -1021,6 +1028,66 @@ class MainScreen(QMainWindow):
 
         self.setup_ui()
         self.update_ui()
+        self.setup_tables("clients")
+
+        self.setup_tables("records")
+        self.setup_tables("organizations")
+        self.setup_admin_info()
+
+    def setup_tables(self, type: str):
+        if type == "clients":
+            self.clients_table.setColumnCount(5)
+            self.clients_table.setHorizontalHeaderLabels([
+                "id",
+                "имя",
+                "email",
+                "пароль",
+                "приватный"
+            ])
+        if type == "records":
+            self.records_table.setColumnCount(7)
+            self.records_table.setHorizontalHeaderLabels([
+                "id",
+                "организация",
+                "название организации",
+                "пользователь",
+                "имя пользователя",
+                "количество накопленных купонов",
+                "дата последней записи"
+            ])
+        if type == "organizations":
+            self.organizations_table.setColumnCount(7)
+            self.organizations_table.setHorizontalHeaderLabels([
+                "id",
+                "название организации",
+                "email",
+                "пароль",
+                "максимум купонов",
+                "стикер",
+                "изображение"
+            ])
+
+    def setup_admin_info(self):
+        response = requests.get(
+            f"{BASE_URL}/admin/info",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+        response = response.json()[0]
+        self.account_label.setText("Профиль")
+        self.email_label.setText("Почта:")
+        self.email_field.setText(response["email"])
+        self.password_label.setText("Пароль:")
+        self.password_field.setText("12345678")
+        self.editing_label.setText("Редактирование:")
+        if response["can_edit"] == True:
+            self.editing.setChecked(True)
+        else:
+            self.editing.setChecked(False)
+            self.editing.setText("Запрещено")
+
+        self.editing_button.setText("Запросить доступ")
+        self.logout_button.setText("Выйти")
+
 
     def setup_ui(self):
         self.left_menu_title.setText("Страницы:")
@@ -1081,6 +1148,7 @@ class MainScreen(QMainWindow):
 
         self.body_stack.setCurrentIndex(1)
 
+        # параметры аккаунта
         self.account_label.setText("Профиль")
         self.email_label.setText("Почта:")
         self.email_field.setText("RuslanBosin28Gmail.com")
@@ -1141,6 +1209,12 @@ class MainScreen(QMainWindow):
         self.page_title.setText("Главная")
 
         self.refresh_button_clients.clicked.connect(self.refresh_clients)
+        self.refresh_button_records.clicked.connect(self.refresh_records)
+        self.refresh_button.clicked.connect(self.refresh_organizations)
+        self.search_button_clients.clicked.connect(self.search_clients_clicked)
+        self.search_button.clicked.connect(self.search_organizations_clicked)
+        self.search_button_records.clicked.connect(self.search_records_clicked)
+
 
     def slide_left_menu(self):
         width = self.left_menu_container.width()
@@ -1206,16 +1280,91 @@ class MainScreen(QMainWindow):
     def exit_button_clicked(self):
         print("exit")
 
+    def fill_table_from_dict_clients(self, values_list: list[dict[str: object]]) -> None:
+        self.clients_table.setRowCount(len(values_list))
+        k = 0
+        for client in values_list:
+            id = QTableWidgetItem(str(client["id"]))
+            name = QTableWidgetItem(client["name"])
+            email = QTableWidgetItem(client["email"])
+            password = QTableWidgetItem(client["password"])
+            is_private = QTableWidgetItem(client["is_private"])
+            self.clients_table.setItem(k, 0, id)
+            self.clients_table.setItem(k, 1, name)
+            self.clients_table.setItem(k, 2, email)
+            self.clients_table.setItem(k, 3, password)
+            self.clients_table.setItem(k, 4, is_private)
+            k += 1
+
+    def fill_table_from_dict_records(self, values_list: list[dict[str: object]]) -> None:
+        self.records_table.setRowCount(len(values_list))
+        k = 0
+
+        for record in values_list:
+            id = QTableWidgetItem((str(record["id"])))
+            organization = QTableWidgetItem(str(record["organization"]))
+            organization_title = QTableWidgetItem(str(record["organization_title"]))
+            user_id = QTableWidgetItem(str(record["client"]))
+            user_name = QTableWidgetItem(str(record["client_name"]))
+            accumulated = QTableWidgetItem(str(record["accumulated"]))
+            last_record_date = QTableWidgetItem(str(record["last_record_date"]))
+
+            self.records_table.setItem(k, 0, id)
+            self.records_table.setItem(k, 1, organization)
+            self.records_table.setItem(k, 2, organization_title)
+            self.records_table.setItem(k, 3, user_id)
+            self.records_table.setItem(k, 4, user_name)
+            self.records_table.setItem(k, 5, accumulated)
+            self.records_table.setItem(k, 6, last_record_date)
+
+            k += 1
+
+    def fill_table_from_dict_organizations(self, values_list: list[dict[str: object]]) -> None:
+        self.organizations_table.setRowCount(len(values_list))
+        k = 0
+
+        for record in values_list:
+            id = QTableWidgetItem(str(record["id"]))
+            organization_title = QTableWidgetItem(str(record["title"]))
+            email = QTableWidgetItem(str(record["email"]))
+            password = QTableWidgetItem(str(record["password"]))
+            coupons_limit = QTableWidgetItem(str(record["limit"]))
+            sticker = QTableWidgetItem(str(record["sticker"]))
+            image = "http://127.0.0.1:5000" + str((record["image"]))
+            im = Image.open(requests.get(image, stream=True).raw)
+            image_label = QtWidgets.QLabel()
+            image_label.setScaledContents(True)
+            image_label_size = image_label.size()
+            qt_image = ImageQt(im)
+            pixmap = QtGui.QPixmap.fromImage(qt_image)
+
+            image_label.setPixmap(pixmap)
+
+            '''
+                            brn = QtWidgets.QPushButton("Hey")
+                            brn.setStyleSheet("""
+                                .QPushButton {
+                                    background-color: red;
+                                }
+                                .QPushButton:pressed {
+                                    background-color: blue;
+                                }
+                            """)
+                            self.clients_table.setCellWidget(k, 0, brn)
+                            '''
+            self.organizations_table.setItem(k, 0, id)
+            self.organizations_table.setItem(k, 1, organization_title)
+            self.organizations_table.setItem(k, 2, email)
+            self.organizations_table.setItem(k, 3, password)
+            self.organizations_table.setItem(k, 4, coupons_limit)
+            self.organizations_table.setItem(k, 5, sticker)
+            self.organizations_table.setCellWidget(k, 6, image_label)
+
+            k += 1
+
+
     def refresh_clients(self):
-        self.clients_table.setSortingEnabled(True)
-        self.clients_table.setColumnCount(5)
-        self.clients_table.setHorizontalHeaderLabels([
-            "id",
-            "имя",
-            "email",
-            "пароль",
-            "приватный"
-        ])
+
 
         if not check_server():
 
@@ -1243,38 +1392,124 @@ class MainScreen(QMainWindow):
             app.window.addWidget(app.screens.LoginScreen.LoginScreen())
             app.window.setCurrentIndex(app.window.currentIndex() + 1)
         else:
-            data = response.json()
-            self.clients_table.setRowCount(len(data))
-            k = 0
+            self.clients_data = response.json()
+            for elem in self.clients_data:
+                 elem["is_private"] = "Да" if elem["is_private"] else "Нет"
+            self.fill_table_from_dict_clients(self.clients_data)
 
-            for client in data:
-                id = QTableWidgetItem(str(client["id"]))
-                name = QTableWidgetItem(client["name"])
-                email = QTableWidgetItem(client["email"])
-                password = QTableWidgetItem(client["password"])
-                is_private = QTableWidgetItem("Да" if client["is_private"] else "Нет")
 
-                self.clients_table.setItem(k, 0, id)
 
-                '''
-                brn = QtWidgets.QPushButton("Hey")
-                brn.setStyleSheet("""
-                    .QPushButton {
-                        background-color: red;
-                    }
-                    .QPushButton:pressed {
-                        background-color: blue;
-                    }
-                """)
-                self.clients_table.setCellWidget(k, 0, brn)
-                '''
+    def refresh_records(self):
 
-                self.clients_table.setItem(k, 1, name)
-                self.clients_table.setItem(k, 2, email)
-                self.clients_table.setItem(k, 3, password)
-                self.clients_table.setItem(k, 4, is_private)
 
-                k += 1
+        if not check_server():
+
+            messageBox = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if messageBox == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.get(
+            f"{BASE_URL}/admin/records",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+
+        if response.status_code != 200:
+            QMessageBox.information(
+                self,
+                "Уведомление",
+                "Срок действия сессии истёк"
+            )
+            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
+            app.window.setCurrentIndex(app.window.currentIndex() + 1)
+        else:
+            self.records_data = response.json()
+            self.fill_table_from_dict_records(self.records_data)
+
+    def refresh_organizations(self):
+
+
+        if not check_server():
+
+            messageBox = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if messageBox == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.get(
+            f"{BASE_URL}/admin/organizations",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+        if response.status_code != 200:
+            QMessageBox.information(
+                self,
+                "Уведомление",
+                "Срок действия сессии истёк"
+            )
+            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
+            app.window.setCurrentIndex(app.window.currentIndex() + 1)
+        else:
+            self.organizations_data = response.json()
+            self.fill_table_from_dict_organizations(self.organizations_data)
+
+    def table_clear(self, table_name: QtWidgets.QTableWidget):
+        while (table_name.rowCount() > 0):
+                table_name.removeRow(0)
+
+    def search_in_table(self, values_list: list[dict[str: object]], search_request: str, selected: list) -> list[dict[str: object]]:
+        result: list[dict[str: object]] = list()
+        visited = list()
+        for elem in selected:
+            if elem == None:
+                continue
+            y = elem.row()
+            if search_request in elem.text() and y not in visited:
+                result.append(values_list[y])
+                visited.append(y)
+        return result
+
+    def search_clients_clicked(self):
+        selected = self.clients_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.clients_table.rowCount()):
+                for j in range(self.clients_table.columnCount()):
+                    selected.append(self.clients_table.item(i, j))
+        searched_rows = self.search_in_table(self.clients_data, self.search_line_edit_clients.text(), selected)
+        self.table_clear(self.clients_table)
+        self.fill_table_from_dict_clients(searched_rows)
+
+
+    def search_records_clicked(self):
+        selected = self.records_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.records_table.rowCount()):
+                for j in range(self.records_table.columnCount()):
+                    selected.append(self.records_table.item(i, j))
+        searched_rows = self.search_in_table(self.records_data, self.search_line_edit_records.text(), selected)
+        self.table_clear(self.records_table)
+        self.fill_table_from_dict_records(searched_rows)
+
+    def search_organizations_clicked(self):
+        selected = self.organizations_table.selectedItems()
+        if len(selected) == 0:
+            for i in range(self.organizations_table.rowCount()):
+                for j in range(self.organizations_table.columnCount()):
+                    selected.append(self.organizations_table.item(i, j))
+        searched_rows = self.search_in_table(self.organizations_data, self.search_line_edit.text(), selected)
+        self.table_clear(self.organizations_table)
+        self.fill_table_from_dict_organizations(searched_rows)
+
+
 
         column_width = self.clients_table.width() // 5 - 3
         for i in range(5):
