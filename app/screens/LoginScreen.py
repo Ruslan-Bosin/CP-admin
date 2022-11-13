@@ -4,7 +4,7 @@ from app import logger
 from PyQt6.QtWidgets import QPushButton, QApplication, QMainWindow, QWidget
 from PyQt6.QtWidgets import QLabel, QLineEdit, QVBoxLayout, QMessageBox
 from PyQt6 import QtCore
-from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtGui import QFont, QFontDatabase, QCursor
 from PyQt6.QtCore import Qt
 import sys
 import requests
@@ -20,6 +20,19 @@ class LoginScreen(QMainWindow):
 
 
     def init_ui(self):
+        self.setStyleSheet("""
+            * {
+                border: none;
+                background-color: '#F5F5F5';
+            }
+            QTableWidget::item:selected {
+                background-color: red;
+            }
+            QTableWidget::item:selected {
+                background-color: #F5F5F5;
+                color: black;
+            }
+        """)
         self.setGeometry(100, 100, 400, 400)
         self.form_layout = QVBoxLayout()
         inputs_layout = QVBoxLayout()
@@ -27,9 +40,10 @@ class LoginScreen(QMainWindow):
 
         form_title = QLabel("Вход")
         font = QFont()
-        font.setPointSize(25)
+        font.setPointSize(15)
         font.setBold(True)
         font.setWeight(600)
+        font.setFamily("Arial Black")
         form_title.setFont(font)
         form_title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.form_layout.addWidget(form_title)
@@ -37,6 +51,14 @@ class LoginScreen(QMainWindow):
 
         login_label = QLabel("Введите email:")
         login = QLineEdit(self)
+        login.setStyleSheet("""
+            QLineEdit {
+                background-color: #FFFFFF;
+                border-radius: 3px;
+            }
+        """)
+        login.setMinimumHeight(30)
+        login.setTextMargins(5, 0, 5, 0)
         login.setMaximumWidth(230)
         lines_layout.addWidget(login_label)
         lines_layout.addWidget(login)
@@ -45,8 +67,16 @@ class LoginScreen(QMainWindow):
 
         lines_layout = QVBoxLayout()
         password = QLineEdit(self)
+        password.setStyleSheet("""
+            QLineEdit {
+                background-color: #FFFFFF;
+                border-radius: 3px;
+            }
+        """)
         password.setEchoMode(QLineEdit.EchoMode.Password)
         password.setMaximumWidth(230)
+        password.setMinimumHeight(30)
+        password.setTextMargins(5, 0, 5, 0)
         password_label = QLabel("Введите пароль:")
         lines_layout.addWidget(password_label)
         lines_layout.addWidget(password)
@@ -56,6 +86,25 @@ class LoginScreen(QMainWindow):
 
         self.form_layout.addLayout(inputs_layout)
         accept = QPushButton("Войти", self)
+        font = QFont()
+        font.setFamily("Arial")
+        accept.setFont(font)
+        accept.setMinimumHeight(30)
+        accept.setCursor(QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        accept.setStyleSheet("""
+            QPushButton {
+                background-color: #E7E7E7;
+                border: 2px solid #D4D4D4;
+                border-radius: 5px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                border: 2px solid #BABABA;
+            }
+            QPushButton:pressed {
+                background-color: #DBDBDB;
+            }
+        """)
         accept.setMaximumWidth(230)
         self.form_layout.addWidget(accept)
 
