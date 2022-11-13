@@ -1971,8 +1971,8 @@ class MainScreen(QMainWindow):
         self.add_organization_button.clicked.connect(lambda _: self.right_menu_add_clicked("organizations"))
         self.add_record_button.clicked.connect(lambda _: self.right_menu_add_clicked("records"))
 
-        self.right_menu_main_button_page_11.clicked.connect(self.right_menu_create_client_clicked)
-        self.right_menu_main_button_page_12.clicked.connect(self.right_menu_create_organization_clicked)
+        self.right_menu_main_button_page_12.clicked.connect(self.right_menu_create_client_clicked)
+        self.right_menu_main_button_page_11.clicked.connect(self.right_menu_create_organization_clicked)
         self.right_menu_main_button_page_13.clicked.connect(self.right_menu_create_record_clicked)
 
     # Настройка текста
@@ -2047,14 +2047,14 @@ class MainScreen(QMainWindow):
         self.right_menu_input_page_13_2.setPlaceholderText("id организации")
         self.right_menu_input_page_13_2.setTextMargins(5, 0, 5, 0)
 
-        self.right_menu_input_page_12_1.setPlaceholderText("Название")
+        self.right_menu_input_page_12_1.setPlaceholderText("Имя")
         self.right_menu_input_page_12_1.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_12_2.setPlaceholderText("Email")
         self.right_menu_input_page_12_2.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_12_3.setPlaceholderText("Пароль")
         self.right_menu_input_page_12_3.setTextMargins(5, 0, 5, 0)
 
-        self.right_menu_input_page_11_1.setPlaceholderText("Имя")
+        self.right_menu_input_page_11_1.setPlaceholderText("Название")
         self.right_menu_input_page_11_1.setTextMargins(5, 0, 5, 0)
         self.right_menu_input_page_11_2.setPlaceholderText("Email")
         self.right_menu_input_page_11_2.setTextMargins(5, 0, 5, 0)
@@ -2491,19 +2491,9 @@ class MainScreen(QMainWindow):
 
     # Страница правого меню - регистрация клиента - кнопка
     def right_menu_create_client_clicked(self):
-        print(1)
-
-    # Страница правого меню - регистрация организации - кнопка
-    def right_menu_create_organization_clicked(self):
-        print(2)
-
-    # Страница правого меню - регистрация записи - кнопка
-    def right_menu_create_record_clicked(self):
-
-        client_id = self.right_menu_input_page_13_1.text()
-        organization_id = self.right_menu_input_page_13_2.text()
-
-
+        name = self.right_menu_input_page_12_1.text()
+        email = self.right_menu_input_page_12_2.text()
+        password = self.right_menu_input_page_12_3.text()
 
         if not check_server():
 
@@ -2517,11 +2507,56 @@ class MainScreen(QMainWindow):
             if message_box == QMessageBox.StandardButton.Abort:
                 exit(-1)
 
-        response = requests.get(
-            f"{BASE_URL}/admin/create/record",
-            headers={"x-access-token": app.storage.get_value(key="token")},
-            json={"email": client_id,
-                  'password': organization_id}
+        response = requests.post(
+            f"{BASE_URL}/client/signup",
+            json={
+                "name": name,
+                "email": email,
+                "password": password
+            }
+        )
+
+        print(response.json())
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Аккаунт клиента создан"
+            )
+
+    # Страница правого меню - регистрация организации - кнопка
+    def right_menu_create_organization_clicked(self):
+
+        title = self.right_menu_input_page_11_1.text()
+        email = self.right_menu_input_page_11_2.text()
+        password = self.right_menu_input_page_11_3.text()
+
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.post(
+            f"{BASE_URL}/organization/signup",
+            json={
+                "title": title,
+                "email": email,
+                "password": password
+            }
         )
 
         if response.status_code != 200:
@@ -2531,7 +2566,57 @@ class MainScreen(QMainWindow):
                 "Что-то введено некорректно"
             )
         else:
-            pass
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Организация создана"
+            )
+
+    # Страница правого меню - регистрация записи - кнопка
+    def right_menu_create_record_clicked(self):
+
+        client_id = self.right_menu_input_page_13_1.text()
+        organization_id = self.right_menu_input_page_13_2.text()
+
+        if not client_id.isdigit() or not organization_id.isdigit():
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+            return
+
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        response = requests.post(
+            f"{BASE_URL}/admin/create/record",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json={"client_id": client_id,
+                  'organization_id': organization_id}
+        )
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Запись создана"
+            )
 
     # Экспорт csv - кнопка
     def export_as_csv_clicked(self) -> None:
