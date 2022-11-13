@@ -2,7 +2,6 @@ import requests
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from PyQt6.QtCore import QPropertyAnimation
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtGui import QIcon, QFont, QPixmap, QMovie, QRegion
 from config import BASE_URL
 import app
 from app import logger
@@ -11,6 +10,11 @@ from PIL import Image
 import requests
 from PIL.ImageQt import ImageQt
 from app.utils.exception_hook import exception_hook
+
+from PIL import Image
+import requests
+from PIL.ImageQt import ImageQt
+from app.utils.exetphook import excepthook
 
 
 
@@ -172,7 +176,7 @@ class MainScreen(QMainWindow):
 
         self.verticalLayout_4.addWidget(self.exit_button)
 
-        self.verticalLayout_2.addWidget(self.left_menu)
+        self.verticalLayout_2_2.addWidget(self.left_menu)
 
         self.horizontalLayout.addWidget(self.left_menu_container)
 
@@ -1640,6 +1644,64 @@ class MainScreen(QMainWindow):
         self.setup_stacks_and_tabs()
         self.setup_text()
         self.update_ui()
+        self.setup_tables("clients")
+        self.setup_tables("records")
+        self.setup_tables("organizations")
+        self.setup_admin_info()
+
+    def setup_tables(self, type: str):
+        if type == "clients":
+            self.clients_table.setColumnCount(5)
+            self.clients_table.setHorizontalHeaderLabels([
+                "id",
+                "имя",
+                "email",
+                "пароль",
+                "приватный"
+            ])
+        if type == "records":
+            self.records_table.setColumnCount(7)
+            self.records_table.setHorizontalHeaderLabels([
+                "id",
+                "организация",
+                "название организации",
+                "пользователь",
+                "имя пользователя",
+                "количество накопленных купонов",
+                "дата последней записи"
+            ])
+        if type == "organizations":
+            self.organizations_table.setColumnCount(7)
+            self.organizations_table.setHorizontalHeaderLabels([
+                "id",
+                "название организации",
+                "email",
+                "пароль",
+                "максимум купонов",
+                "стикер",
+                "изображение"
+            ])
+
+    def setup_admin_info(self):
+        response = requests.get(
+            f"{BASE_URL}/admin/info",
+            headers={"x-access-token": app.storage.get_value(key="token")}
+        )
+        response = response.json()[0]
+        self.account_label.setText("Профиль")
+        self.email_label.setText("Почта:")
+        self.email_field.setText(response["email"])
+        self.password_label.setText("Пароль:")
+        self.password_field.setText("12345678")
+        self.editing_label.setText("Редактирование:")
+        if response["can_edit"] == True:
+            self.editing.setChecked(True)
+        else:
+            self.editing.setChecked(False)
+            self.editing.setText("Запрещено")
+
+        self.editing_button.setText("Запросить доступ")
+        self.logout_button.setText("Выйти")
 
     def setup_text(self):
         self.left_menu_title.setText("Страницы:")
@@ -1730,6 +1792,7 @@ class MainScreen(QMainWindow):
                 self.search_button.setEnabled(False)
             else:
                 self.search_button.setEnabled(True)
+
         self.search_button.setEnabled(False)
         self.search_line_edit.textChanged.connect(search_button_when_text_changed)
 
@@ -1738,6 +1801,7 @@ class MainScreen(QMainWindow):
                 self.search_button_clients.setEnabled(False)
             else:
                 self.search_button_clients.setEnabled(True)
+
         self.search_button_clients.setEnabled(False)
         self.search_line_edit_clients.textChanged.connect(search_button_clients_when_text_changed)
 
@@ -1746,6 +1810,7 @@ class MainScreen(QMainWindow):
                 self.search_button_records.setEnabled(False)
             else:
                 self.search_button_records.setEnabled(True)
+
         self.search_button_records.setEnabled(False)
         self.search_line_edit_records.textChanged.connect(search_button_records_when_text_changed)
 
@@ -1904,18 +1969,6 @@ class MainScreen(QMainWindow):
 
             image_label.setPixmap(pixmap)
 
-            '''
-                            brn = QtWidgets.QPushButton("Hey")
-                            brn.setStyleSheet("""
-                                .QPushButton {
-                                    background-color: red;
-                                }
-                                .QPushButton:pressed {
-                                    background-color: blue;
-                                }
-                            """)
-                            self.clients_table.setCellWidget(k, 0, brn)
-                            '''
             self.organizations_table.setItem(k, 0, id)
             self.organizations_table.setItem(k, 1, organization_title)
             self.organizations_table.setItem(k, 2, email)
@@ -1962,70 +2015,6 @@ class MainScreen(QMainWindow):
             self.fill_table_from_dict_clients(self.clients_data)
 
 
-
-    def refresh_records(self):
-
-
-        if not check_server():
-
-            messageBox = QMessageBox.critical(
-                self,
-                "Ошибка",
-                "Не удалось подключиться к серверу",
-                QMessageBox.StandardButton.Abort
-            )
-
-            if messageBox == QMessageBox.StandardButton.Abort:
-                exit(-1)
-
-        response = requests.get(
-            f"{BASE_URL}/admin/records",
-            headers={"x-access-token": app.storage.get_value(key="token")}
-        )
-
-        if response.status_code != 200:
-            QMessageBox.information(
-                self,
-                "Уведомление",
-                "Срок действия сессии истёк"
-            )
-            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
-            app.window.setCurrentIndex(app.window.currentIndex() + 1)
-        else:
-            self.records_data = response.json()
-            self.fill_table_from_dict_records(self.records_data)
-
-    def refresh_organizations(self):
-
-
-        if not check_server():
-
-            messageBox = QMessageBox.critical(
-                self,
-                "Ошибка",
-                "Не удалось подключиться к серверу",
-                QMessageBox.StandardButton.Abort
-            )
-
-            if messageBox == QMessageBox.StandardButton.Abort:
-                exit(-1)
-
-        response = requests.get(
-            f"{BASE_URL}/admin/organizations",
-            headers={"x-access-token": app.storage.get_value(key="token")}
-        )
-        if response.status_code != 200:
-            QMessageBox.information(
-                self,
-                "Уведомление",
-                "Срок действия сессии истёк"
-            )
-            app.window.addWidget(app.screens.LoginScreen.LoginScreen())
-            app.window.setCurrentIndex(app.window.currentIndex() + 1)
-        else:
-            self.organizations_data = response.json()
-            self.fill_table_from_dict_organizations(self.organizations_data)
-
     def table_clear(self, table_name: QtWidgets.QTableWidget):
         while (table_name.rowCount() > 0):
                 table_name.removeRow(0)
@@ -2052,6 +2041,9 @@ class MainScreen(QMainWindow):
         self.table_clear(self.clients_table)
         self.fill_table_from_dict_clients(searched_rows)
 
+        column_width = self.clients_table.width() // 5 - 3
+        for i in range(5):
+            self.clients_table.setColumnWidth(i, column_width)
 
     def search_records_clicked(self):
         selected = self.records_table.selectedItems()
@@ -2073,6 +2065,4 @@ class MainScreen(QMainWindow):
         self.table_clear(self.organizations_table)
         self.fill_table_from_dict_organizations(searched_rows)
 
-        column_width = self.clients_table.width() // 5 - 3
-        for i in range(5):
-            self.clients_table.setColumnWidth(i, column_width)
+
