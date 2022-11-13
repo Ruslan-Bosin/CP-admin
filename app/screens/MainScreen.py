@@ -1,7 +1,7 @@
 import requests
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem, QFileDialog
 from PyQt6.QtCore import QPropertyAnimation
 from PyQt6 import QtCore, QtGui, QtWidgets
 from config import BASE_URL, BASE_URL_IMAGE
@@ -9,6 +9,8 @@ import app
 from app import logger
 from app.utils.check_server import check_server
 from app.utils.exception_hook import exception_hook
+import csv
+import sqlite3
 
 
 class MainScreen(QMainWindow):
@@ -2759,11 +2761,140 @@ class MainScreen(QMainWindow):
 
     # Экспорт csv - кнопка
     def export_as_csv_clicked(self) -> None:
+        # a = QFileDialog.labelText(self)
+        delimetr = " "
+        quote_char = "\n"
         print(f"csv {self.export_table_name}")
+        SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
+                                                     'CSV Таблица (*.csv)')[0]
+        with open(SaveFilePath, "w", encoding="utf-16") as csv_file:
+            writer = csv.writer(csv_file)
+            rows_to_write = list()
+            if self.export_table_name == "clients":
+
+                header = list()
+                for key in self.clients_data[0].keys():
+                    header.append(key)
+                rows_to_write.append(header)
+                print(self.clients_data)
+                for y in range(len(self.clients_data)):
+                    row = list()
+                    for key in header:
+                        item = str(self.clients_data[y][key])
+                        row.append(item)
+                    rows_to_write.append(row)
+            elif self.export_table_name == "organizations":
+                header = list()
+                for key in self.organizations_data[0].keys():
+                    header.append(key)
+                rows_to_write.append(header)
+                print(self.organizations_data)
+                for y in range(len(self.organizations_data)):
+                    row = list()
+                    for key in header:
+                        item = str(self.organizations_data[y][key])
+                        if key == "image" and (item != "None"):
+                            item = BASE_URL_IMAGE + item
+                        row.append(item)
+                    rows_to_write.append(row)
+            else:
+                header = list()
+                for key in self.records_data[0].keys():
+                    header.append(key)
+                rows_to_write.append(header)
+                print(self.records_data)
+                for y in range(len(self.records_data)):
+                    row = list()
+                    for key in header:
+                        item = str(self.records_data[y][key])
+                        row.append(item)
+                    rows_to_write.append(row)
+            writer.writerows(rows_to_write)
+
+
+
 
     # Экспорт db - кнопка
+    # def type_translator(self):
+
     def export_as_db_clicked(self) -> None:
-        print(f"db {self.export_table_name}")
+        SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
+                                                     'База данных (*.db)')[0]
+        connection = sqlite3.connect(SaveFilePath)
+        data_base_cursor = connection.cursor()
+        if self.export_table_name == "clients":
+            data_base_cursor.execute("""CREATE TABLE clients 
+                                        (
+                                        id int NOT NULL, 
+                                        email TEXT,
+                                        is_private INTEGER,
+                                        name TEXT,
+                                        password TEXT,
+                                        PRIMARY KEY (id) 
+                                        )
+    
+            """)
+            for i in range(len(self.clients_data)):
+                data_base_cursor.execute(f"""
+                REPLACE INTO clients (id, email, is_private, name, password) VALUES ('{self.clients_data[i]["id"]}', 
+                '{self.clients_data[i]["email"]}', '{int(self.clients_data[i]["is_private"])}', 
+                '{self.clients_data[i]["name"]}',
+                '{self.clients_data[i]["password"]}')
+            """)
+            connection.commit()
+            connection.close()
+        elif self.export_table_name == "records":
+            data_base_cursor.execute("""CREATE TABLE records
+                                        (
+                                        id int NOT NULL,
+                                        accumulated INTEGER,
+
+                                        client_number INTEGER,
+                                        client_name TEXT,
+                                        last_record_date TEXT,
+                                        organization_number INTEGER,
+                                        organization_title TEXT,
+                                        PRIMARY KEY (id)
+                                        )
+
+            """)
+            for i in range(len(self.records_data)):
+                data_base_cursor.execute(f"""
+                REPLACE INTO records (id, accumulated, client_number, client_name, last_record_date, organization_number,
+                 organization_title) VALUES ('{self.records_data[i]["id"]}',
+                '{self.records_data[i]["accumulated"]}', '{int(self.records_data[i]["client"])}', 
+                '{self.records_data[i]["client_name"]}', '{self.records_data[i]["last_record_date"]}', 
+                '{self.records_data[i]["organization"]}', '{self.records_data[i]["organization_title"]}')
+            """)
+            connection.commit()
+            connection.close()
+        else:
+            data_base_cursor.execute("""CREATE TABLE organizations
+                                                    (
+                                                    id INTEGER NOT NULL,
+                                                    email TEXT,
+                                                    image TEXT,
+                                                    limitation INTEGER,
+                                                    password TEXT,
+                                                    sticker TEXT,
+                                                    title TEXT,
+                                                    PRIMARY KEY (id)
+                                                    )
+
+                        """)
+            for i in range(len(self.organizations_data)):
+                data_base_cursor.execute(f"""
+                            REPLACE INTO organizations (id, email, image, limitation, password, sticker,
+                             title) VALUES ('{self.organizations_data[i]["id"]}',
+                            '{self.organizations_data[i]["email"]}', 
+                            '{"no" if self.organizations_data[i]["image"] == None 
+                                else BASE_URL_IMAGE + self.organizations_data[i]["image"]}',
+                                '{self.organizations_data[i]["limit"]}',
+                            '{self.organizations_data[i]["password"]}', '{self.organizations_data[i]["sticker"]}',
+                            '{self.organizations_data[i]["title"]}')
+                        """)
+            connection.commit()
+            connection.close()
 
     # Страница правого меню - смена выбранных ячеек - event
     def right_menu_clients_selection_changed(self):
