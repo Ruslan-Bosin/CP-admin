@@ -6,6 +6,7 @@ from PyQt6.QtCore import QPropertyAnimation
 from PyQt6 import QtCore, QtGui, QtWidgets
 from config import BASE_URL, BASE_URL_IMAGE
 import app
+from run import START_TIME
 from app import logger
 from app.utils.check_server import check_server
 from app.utils.exception_hook import exception_hook
@@ -1006,9 +1007,9 @@ class MainScreen(QMainWindow):
         self.page_3_Logs_View = QtWidgets.QPlainTextEdit()
         self.page_3_Logs_View.isReadOnly()
         self.page_3_Logs_View.setStyleSheet("""
-                background-color: #575F6E;
+                background-color: #FFFFFF;
                 border: none;
-        """) #
+        """)  #
 
         self.horizontalLayout_9.addWidget(self.page_3_Logs_View)
 
@@ -1885,6 +1886,7 @@ class MainScreen(QMainWindow):
         self.page_1_button.clicked.connect(self.page_1_button_clicked)
         self.page_2_button.clicked.connect(self.page_2_button_clicked)
         self.page_3_button.clicked.connect(self.page_3_button_clicked)
+        self.page_3_button.clicked.connect(self.refresh_logs)
         self.exit_button.clicked.connect(self.exit_button_clicked)
         self.logout_button.clicked.connect(self.exit_button_clicked)
         self.editing_button.clicked.connect(self.request_editing_clicked)
@@ -2400,8 +2402,24 @@ class MainScreen(QMainWindow):
         else:
             self.page_2_button.setChecked(True)
 
+    def refresh_logs(self):
+        print(1)
+        response = requests.post(
+            f"{BASE_URL}/admin/getlogs",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json={
+                "start_datetime": str(START_TIME)
+            }
+        )
+        response_json = response.json()
+        logs = "На данный момент на сервере нет логированной информации"
+        if len(response_json) > 0:
+            logs = "\n".join([item["log_message"] for item in response_json])
+        self.page_3_Logs_View.setPlainText(logs)
+
     # Выбор страниц - логи - кнопка
     def page_3_button_clicked(self):
+        # print(1)
         self.page_title.setText("Логи")
         if self.page_3_button.isChecked():
             self.body_stack.setCurrentIndex(2)
@@ -2409,6 +2427,7 @@ class MainScreen(QMainWindow):
             self.page_2_button.setChecked(False)
         else:
             self.page_3_button.setChecked(True)
+
     # Выбор страниц - выход + logout
     def exit_button_clicked(self):
         question = QMessageBox.question(
@@ -2804,14 +2823,15 @@ class MainScreen(QMainWindow):
 
     def input_data_changed_page_2(self):
         if self.current_table_name == "clients":
-            before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+            before = self.clients_table.item(self.clients_table_current_selection[0],
+                                             self.clients_table_current_selection[1]).text()
             if self.right_menu_input_page_2.text() != before:
                 self.right_menu_main_button_page_2.setEnabled(True)
             else:
                 self.right_menu_main_button_page_2.setEnabled(False)
         elif self.current_table_name == "organizations":
             before = self.organizations_table.item(self.organizations_table_current_selection[0],
-                                             self.organizations_table_current_selection[1]).text()
+                                                   self.organizations_table_current_selection[1]).text()
             if self.right_menu_input_page_2.text() != before:
                 self.right_menu_main_button_page_2.setEnabled(True)
             else:
@@ -2819,7 +2839,8 @@ class MainScreen(QMainWindow):
 
     def input_data_changed_page_3(self):
         checked = self.check_box_page_3.isChecked()
-        _b = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+        _b = self.clients_table.item(self.clients_table_current_selection[0],
+                                     self.clients_table_current_selection[1]).text()
         before = _b == "Да"
         if checked != before:
             self.right_menu_main_button_page_3.setEnabled(True)
@@ -2838,7 +2859,7 @@ class MainScreen(QMainWindow):
         quote_char = "\n"
         print(f"csv {self.export_table_name}")
         SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
-                                                     'CSV Таблица (*.csv)')[0]
+                                                   'CSV Таблица (*.csv)')[0]
         with open(SaveFilePath, "w", encoding="utf-16") as csv_file:
             writer = csv.writer(csv_file)
             rows_to_write = list()
@@ -2886,7 +2907,7 @@ class MainScreen(QMainWindow):
     # Экспорт db - кнопка
     def export_as_db_clicked(self) -> None:
         SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
-                                                     'База данных (*.db)')[0]
+                                                   'База данных (*.db)')[0]
         connection = sqlite3.connect(SaveFilePath)
         data_base_cursor = connection.cursor()
         if self.export_table_name == "clients":
@@ -2899,7 +2920,7 @@ class MainScreen(QMainWindow):
                                         password TEXT,
                                         PRIMARY KEY (id) 
                                         )
-    
+
             """)
             for i in range(len(self.clients_data)):
                 data_base_cursor.execute(f"""
@@ -2954,8 +2975,8 @@ class MainScreen(QMainWindow):
                             REPLACE INTO organizations (id, email, image, limitation, password, sticker,
                              title) VALUES ('{self.organizations_data[i]["id"]}',
                             '{self.organizations_data[i]["email"]}', 
-                            '{"no" if self.organizations_data[i]["image"] == None 
-                                else BASE_URL_IMAGE + self.organizations_data[i]["image"]}',
+                            '{"no" if self.organizations_data[i]["image"] == None
+                else BASE_URL_IMAGE + self.organizations_data[i]["image"]}',
                                 '{self.organizations_data[i]["limit"]}',
                             '{self.organizations_data[i]["password"]}', '{self.organizations_data[i]["sticker"]}',
                             '{self.organizations_data[i]["title"]}')
@@ -3155,7 +3176,8 @@ class MainScreen(QMainWindow):
                 self.right_menu_stack.setCurrentIndex(8)
                 self.organizations_table_can_edit = True
 
-        elif len(selected) == self.organizations_table.columnCount() - 1 and len(set([item.row() for item in selected])) == 1:
+        elif len(selected) == self.organizations_table.columnCount() - 1 and len(
+                set([item.row() for item in selected])) == 1:
             self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
 
             self.right_menu_stack.setCurrentIndex(3)
