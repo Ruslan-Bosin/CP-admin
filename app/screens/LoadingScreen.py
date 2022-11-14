@@ -19,14 +19,14 @@ class LoadingScreen(QMainWindow):
 
         if not check_server():
 
-            messageBox = QMessageBox.critical(
+            message_box = QMessageBox.critical(
                 self,
                 "Ошибка",
                 "Не удалось подключиться к серверу",
                 QMessageBox.StandardButton.Abort
             )
 
-            if messageBox == QMessageBox.StandardButton.Abort:
+            if message_box == QMessageBox.StandardButton.Abort:
                 exit(-1)
 
         if app.storage.key_exists("token"):

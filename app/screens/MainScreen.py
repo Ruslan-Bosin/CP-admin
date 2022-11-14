@@ -1012,7 +1012,7 @@ class MainScreen(QMainWindow):
         self.page_3_Logs_View.setStyleSheet("""
                 background-color: #575F6E;
                 border: none;
-        """) #
+        """)
 
         self.horizontalLayout_9.addWidget(self.page_3_Logs_View)
 
@@ -1723,6 +1723,7 @@ class MainScreen(QMainWindow):
 
         self.page_3_button.setCheckable(True)
         self.page_3_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        self.page_3_button.hide()
         self.page_3_button.setIcon(QtGui.QIcon("app/static/icons/logs.svg"))
 
         self.exit_button.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
@@ -2428,6 +2429,7 @@ class MainScreen(QMainWindow):
             self.page_2_button.setChecked(False)
         else:
             self.page_3_button.setChecked(True)
+
     # Выбор страниц - выход + logout
     def exit_button_clicked(self):
         question = QMessageBox.question(
@@ -2881,7 +2883,7 @@ class MainScreen(QMainWindow):
 
         try:
             int(self.right_menu_input_page_7_1.text())
-        except:
+        except ValueError:
             QMessageBox.warning(
                 self,
                 "Ошибка",
@@ -2911,14 +2913,15 @@ class MainScreen(QMainWindow):
 
     def input_data_changed_page_2(self):
         if self.current_table_name == "clients":
-            before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+            before = self.clients_table.item(self.clients_table_current_selection[0],
+                                             self.clients_table_current_selection[1]).text()
             if self.right_menu_input_page_2.text() != before:
                 self.right_menu_main_button_page_2.setEnabled(True)
             else:
                 self.right_menu_main_button_page_2.setEnabled(False)
         elif self.current_table_name == "organizations":
             before = self.organizations_table.item(self.organizations_table_current_selection[0],
-                                             self.organizations_table_current_selection[1]).text()
+                                                   self.organizations_table_current_selection[1]).text()
             if self.right_menu_input_page_2.text() != before:
                 self.right_menu_main_button_page_2.setEnabled(True)
             else:
@@ -2926,7 +2929,8 @@ class MainScreen(QMainWindow):
 
     def input_data_changed_page_3(self):
         checked = self.check_box_page_3.isChecked()
-        _b = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
+        _b = self.clients_table.item(self.clients_table_current_selection[0],
+                                     self.clients_table_current_selection[1]).text()
         before = _b == "Да"
         if checked != before:
             self.right_menu_main_button_page_3.setEnabled(True)
@@ -2940,7 +2944,7 @@ class MainScreen(QMainWindow):
 
     def input_data_changed_page_7(self):
         before = self.records_table.item(self.records_table_current_selection[0],
-                                               self.records_table_current_selection[1]).text()
+                                         self.records_table_current_selection[1]).text()
         if self.right_menu_input_page_7_1.text() != before:
             self.right_menu_main_button_page_7.setEnabled(True)
         else:
@@ -2948,13 +2952,10 @@ class MainScreen(QMainWindow):
 
     # Экспорт csv - кнопка
     def export_as_csv_clicked(self) -> None:
-        # a = QFileDialog.labelText(self)
-        delimetr = " "
-        quote_char = "\n"
         print(f"csv {self.export_table_name}")
-        SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
+        save_file_path = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
                                                      'CSV Таблица (*.csv)')[0]
-        with open(SaveFilePath, "w", encoding="utf-16") as csv_file:
+        with open(save_file_path, "w", encoding="utf-16") as csv_file:
             writer = csv.writer(csv_file)
             rows_to_write = list()
             if self.export_table_name == "clients":
@@ -3000,9 +3001,9 @@ class MainScreen(QMainWindow):
 
     # Экспорт db - кнопка
     def export_as_db_clicked(self) -> None:
-        SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
+        save_file_path = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
                                                      'База данных (*.db)')[0]
-        connection = sqlite3.connect(SaveFilePath)
+        connection = sqlite3.connect(save_file_path)
         data_base_cursor = connection.cursor()
         if self.export_table_name == "clients":
             data_base_cursor.execute("""CREATE TABLE clients 
@@ -3042,8 +3043,8 @@ class MainScreen(QMainWindow):
             """)
             for i in range(len(self.records_data)):
                 data_base_cursor.execute(f"""
-                REPLACE INTO records (id, accumulated, client_number, client_name, last_record_date, organization_number,
-                 organization_title) VALUES ('{self.records_data[i]["id"]}',
+                REPLACE INTO records (id, accumulated, client_number, client_name, last_record_date, 
+                organization_number, organization_title) VALUES ('{self.records_data[i]["id"]}',
                 '{self.records_data[i]["accumulated"]}', '{int(self.records_data[i]["client"])}', 
                 '{self.records_data[i]["client_name"]}', '{self.records_data[i]["last_record_date"]}', 
                 '{self.records_data[i]["organization"]}', '{self.records_data[i]["organization_title"]}')
@@ -3069,8 +3070,8 @@ class MainScreen(QMainWindow):
                             REPLACE INTO organizations (id, email, image, limitation, password, sticker,
                              title) VALUES ('{self.organizations_data[i]["id"]}',
                             '{self.organizations_data[i]["email"]}', 
-                            '{"no" if self.organizations_data[i]["image"] == None 
-                                else BASE_URL_IMAGE + self.organizations_data[i]["image"]}',
+                            '{"no" if self.organizations_data[i]["image"] == None
+                else BASE_URL_IMAGE + self.organizations_data[i]["image"]}',
                                 '{self.organizations_data[i]["limit"]}',
                             '{self.organizations_data[i]["password"]}', '{self.organizations_data[i]["sticker"]}',
                             '{self.organizations_data[i]["title"]}')
@@ -3270,7 +3271,8 @@ class MainScreen(QMainWindow):
                 self.right_menu_stack.setCurrentIndex(8)
                 self.organizations_table_can_edit = True
 
-        elif len(selected) == self.organizations_table.columnCount() - 1 and len(set([item.row() for item in selected])) == 1:
+        elif len(selected) == self.organizations_table.columnCount() - 1 and len(
+                set([item.row() for item in selected])) == 1:
             self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
 
             self.right_menu_stack.setCurrentIndex(3)

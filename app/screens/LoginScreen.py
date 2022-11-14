@@ -1,12 +1,9 @@
-from PyQt6.QtWidgets import QMainWindow
 import app
 from app import logger
-from PyQt6.QtWidgets import QPushButton, QApplication, QMainWindow, QWidget
+from PyQt6.QtWidgets import QPushButton, QMainWindow, QWidget
 from PyQt6.QtWidgets import QLabel, QLineEdit, QVBoxLayout, QMessageBox
 from PyQt6 import QtCore
-from PyQt6.QtGui import QFont, QFontDatabase, QCursor
-from PyQt6.QtCore import Qt
-import sys
+from PyQt6.QtGui import QFont, QCursor
 import requests
 from config import BASE_URL
 from app.utils.check_server import check_server
@@ -16,23 +13,19 @@ class LoginScreen(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        self.init_ui()
-
-
-    def init_ui(self):
         self.setStyleSheet("""
-            * {
-                border: none;
-                background-color: '#F5F5F5';
-            }
-            QTableWidget::item:selected {
-                background-color: red;
-            }
-            QTableWidget::item:selected {
-                background-color: #F5F5F5;
-                color: black;
-            }
-        """)
+                    * {
+                        border: none;
+                        background-color: '#F5F5F5';
+                    }
+                    QTableWidget::item:selected {
+                        background-color: red;
+                    }
+                    QTableWidget::item:selected {
+                        background-color: #F5F5F5;
+                        color: black;
+                    }
+                """)
         self.form_layout = QVBoxLayout()
         inputs_layout = QVBoxLayout()
         lines_layout = QVBoxLayout()
@@ -47,15 +40,14 @@ class LoginScreen(QMainWindow):
         form_title.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.form_layout.addWidget(form_title)
 
-
         login_label = QLabel("Введите email:")
         login = QLineEdit(self)
         login.setStyleSheet("""
-            QLineEdit {
-                background-color: #FFFFFF;
-                border-radius: 3px;
-            }
-        """)
+                    QLineEdit {
+                        background-color: #FFFFFF;
+                        border-radius: 3px;
+                    }
+                """)
         login.setMinimumHeight(30)
         login.setTextMargins(5, 0, 5, 0)
         login.setMaximumWidth(230)
@@ -67,11 +59,11 @@ class LoginScreen(QMainWindow):
         lines_layout = QVBoxLayout()
         password = QLineEdit(self)
         password.setStyleSheet("""
-            QLineEdit {
-                background-color: #FFFFFF;
-                border-radius: 3px;
-            }
-        """)
+                    QLineEdit {
+                        background-color: #FFFFFF;
+                        border-radius: 3px;
+                    }
+                """)
         password.setEchoMode(QLineEdit.EchoMode.Password)
         password.setMaximumWidth(230)
         password.setMinimumHeight(30)
@@ -91,19 +83,19 @@ class LoginScreen(QMainWindow):
         accept.setMinimumHeight(30)
         accept.setCursor(QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         accept.setStyleSheet("""
-            QPushButton {
-                background-color: #E7E7E7;
-                border: 2px solid #D4D4D4;
-                border-radius: 5px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                border: 2px solid #BABABA;
-            }
-            QPushButton:pressed {
-                background-color: #DBDBDB;
-            }
-        """)
+                    QPushButton {
+                        background-color: #E7E7E7;
+                        border: 2px solid #D4D4D4;
+                        border-radius: 5px;
+                        font-size: 11px;
+                    }
+                    QPushButton:hover {
+                        border: 2px solid #BABABA;
+                    }
+                    QPushButton:pressed {
+                        background-color: #DBDBDB;
+                    }
+                """)
         accept.setMaximumWidth(230)
         self.form_layout.addWidget(accept)
 
@@ -114,7 +106,7 @@ class LoginScreen(QMainWindow):
         self.error_message.hide()
         self.error_message.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
-        accept.clicked.connect(self.OnClick)
+        accept.clicked.connect(self.on_click)
         widget = QWidget()
         # form_layout.setContentsMargins(200, 200, 200, 200)
         self.form_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -122,18 +114,18 @@ class LoginScreen(QMainWindow):
         widget.setLayout(self.form_layout)
         self.setCentralWidget(widget)
 
-    def OnClick(self):
+    def on_click(self):
 
         if not check_server():
 
-            messageBox = QMessageBox.critical(
+            message_box = QMessageBox.critical(
                 self,
                 "Ошибка",
                 "Не удалось подключиться к серверу",
                 QMessageBox.StandardButton.Abort
             )
 
-            if messageBox == QMessageBox.StandardButton.Abort:
+            if message_box == QMessageBox.StandardButton.Abort:
                 exit(-1)
 
         response = requests.post(
@@ -142,7 +134,7 @@ class LoginScreen(QMainWindow):
                   'password': f'{self.password_edit.text()}'}
         )
 
-        if (response.status_code == 200):
+        if response.status_code == 200:
 
             response_json = response.json()
             app.storage.set_value("token", response_json['token'])
