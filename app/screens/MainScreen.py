@@ -999,6 +999,12 @@ class MainScreen(QMainWindow):
 
         # Page 1
         self.page_3 = QtWidgets.QWidget()
+        self.page_3_Logs_View = QtWidgets.QPlainTextEdit(self.page_3)
+        self.page_3_Logs_View.isReadOnly()
+        self.page_3_Logs_View.setStyleSheet("""
+                background-color: #575F6E;
+                border: none;
+        """) #
         self.page_3.setObjectName("page_3")
 
         self.body_stack.addWidget(self.page_3)
@@ -2023,13 +2029,11 @@ class MainScreen(QMainWindow):
             ])
             self.resize_columns(self.clients_table)
         if table_name == "records":
-            self.records_table.setColumnCount(7)
+            self.records_table.setColumnCount(5)
             self.records_table.setHorizontalHeaderLabels([
                 "id",
                 "организация",
-                "название организации",
                 "пользователь",
-                "имя пользователя",
                 "количество накопленных купонов",
                 "дата последней записи"
             ])
@@ -2184,26 +2188,28 @@ class MainScreen(QMainWindow):
         for record in values_list:
             record_id = QTableWidgetItem((str(record["id"])))
             record_id.setTextAlignment(self.in_table_cell_alignment)
-            organization = QTableWidgetItem(str(record["organization"]))
-            organization.setTextAlignment(self.in_table_cell_alignment)
-            organization_title = QTableWidgetItem(str(record["organization_title"]))
-            organization_title.setTextAlignment(self.in_table_cell_alignment)
-            user_id = QTableWidgetItem(str(record["client"]))
-            user_id.setTextAlignment(self.in_table_cell_alignment)
-            user_name = QTableWidgetItem(str(record["client_name"]))
-            user_name.setTextAlignment(self.in_table_cell_alignment)
+            organization = (str(record["organization"]))
+            # organization.setTextAlignment(self.in_table_cell_alignment)
+            organization_title = (str(record["organization_title"]))
+            # organization_title.setTextAlignment(self.in_table_cell_alignment)
+            organization_and_id = QTableWidgetItem(f"{organization_title} ({organization})")
+            organization_and_id.setTextAlignment(self.in_table_cell_alignment)
+            user_id = (str(record["client"]))
+            # user_id.setTextAlignment(self.in_table_cell_alignment)
+            user_name = (str(record["client_name"]))
+            # user_name.setTextAlignment(self.in_table_cell_alignment)
+            user = QTableWidgetItem(f"{user_name} ({user_id})")
+            user.setTextAlignment(self.in_table_cell_alignment)
             accumulated = QTableWidgetItem(str(record["accumulated"]))
             accumulated.setTextAlignment(self.in_table_cell_alignment)
             last_record_date = QTableWidgetItem(str(record["last_record_date"]))
             last_record_date.setTextAlignment(self.in_table_cell_alignment)
 
             self.records_table.setItem(k, 0, record_id)
-            self.records_table.setItem(k, 1, organization)
-            self.records_table.setItem(k, 2, organization_title)
-            self.records_table.setItem(k, 3, user_id)
-            self.records_table.setItem(k, 4, user_name)
-            self.records_table.setItem(k, 5, accumulated)
-            self.records_table.setItem(k, 6, last_record_date)
+            self.records_table.setItem(k, 1, organization_and_id)
+            self.records_table.setItem(k, 2, user)
+            self.records_table.setItem(k, 3, accumulated)
+            self.records_table.setItem(k, 4, last_record_date)
 
             k += 1
 
@@ -2394,7 +2400,6 @@ class MainScreen(QMainWindow):
             self.page_2_button.setChecked(False)
         else:
             self.page_3_button.setChecked(True)
-
     # Выбор страниц - выход + logout
     def exit_button_clicked(self):
         question = QMessageBox.question(
