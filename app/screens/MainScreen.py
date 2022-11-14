@@ -673,6 +673,7 @@ class MainScreen(QMainWindow):
 
         # Organizations Table
         self.organizations_table = QtWidgets.QTableWidget(self.organizations_layout)
+        self.organizations_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.organizations_table.setObjectName("organizations_table")
         self.organizations_table.setColumnCount(0)
         self.organizations_table.setRowCount(0)
@@ -983,7 +984,8 @@ class MainScreen(QMainWindow):
 
         # Table Widget
         self.records_table = QtWidgets.QTableWidget(self.records_layout)
-        self.records_table.setObjectName("tableWidget")
+        self.records_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.records_table.setObjectName("records_table")
         self.records_table.setColumnCount(0)
         self.records_table.setRowCount(0)
 
@@ -2006,7 +2008,7 @@ class MainScreen(QMainWindow):
         self.right_menu_input_page_11_2.setPlaceholderText("Email")
         self.right_menu_input_page_11_3.setPlaceholderText("Пароль")
 
-        self.right_menu_main_button_page_4.setText("Удалить клиента")
+        self.right_menu_main_button_page_4.setText("Удалить")
 
     # Настройка header-ов таблиц
     def setup_tables(self, table_name: str):
@@ -2628,16 +2630,29 @@ class MainScreen(QMainWindow):
                 if message_box == QMessageBox.StandardButton.Abort:
                     exit(-1)
 
-            _json = {"id": self.current_client_id}
-            _key = headers[self.clients_table_current_selection[1]]
+            _json = {"id": self.current_organization_id}
+            _key = headers[self.organizations_table_current_selection[1]]
             _value = self.right_menu_input_page_2.text()
             _json[_key] = _value
+
+            if _key == "limit":
+                if _value.isdigit():
+                    _json[_key] = int(_value)
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка",
+                        "Что-то введено некорректно"
+                    )
+                    return
 
             response = requests.put(
                 f"{BASE_URL}/admin/organizations/update",
                 headers={"x-access-token": app.storage.get_value(key="token")},
                 json=_json
             )
+
+            print(response.json())
 
             if response.status_code != 200:
                 QMessageBox.warning(
@@ -2689,46 +2704,89 @@ class MainScreen(QMainWindow):
 
     def update_data_main_button_page_4_clicked(self):
 
-        question = QMessageBox.question(
-            self,
-            "Подтверждение",
-            "Вы уверены, что хотите удалить этого клиента?",
-            QMessageBox.StandardButton.Yes |
-            QMessageBox.StandardButton.No
-        )
-        if question == QMessageBox.StandardButton.No:
-            return
-
-        if not check_server():
-
-            message_box = QMessageBox.critical(
+        if self.current_table_name == "clients":
+            question = QMessageBox.question(
                 self,
-                "Ошибка",
-                "Не удалось подключиться к серверу",
-                QMessageBox.StandardButton.Abort
+                "Подтверждение",
+                "Вы уверены, что хотите удалить этого клиента?",
+                QMessageBox.StandardButton.Yes |
+                QMessageBox.StandardButton.No
+            )
+            if question == QMessageBox.StandardButton.No:
+                return
+
+            if not check_server():
+
+                message_box = QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось подключиться к серверу",
+                    QMessageBox.StandardButton.Abort
+                )
+
+                if message_box == QMessageBox.StandardButton.Abort:
+                    exit(-1)
+
+            response = requests.post(
+                f"{BASE_URL}/admin/clients/remove",
+                headers={"x-access-token": app.storage.get_value(key="token")},
+                json={"id": self.current_client_id}
             )
 
-            if message_box == QMessageBox.StandardButton.Abort:
-                exit(-1)
+            if response.status_code != 200:
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "Что-то введено некорректно"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Готово",
+                    "Клиент удалён"
+                )
 
-        response = requests.post(
-            f"{BASE_URL}/admin/clients/remove",
-            headers={"x-access-token": app.storage.get_value(key="token")},
-            json={"id": self.current_client_id}
-        )
+        elif self.current_table_name == "organizations":
+            question = QMessageBox.question(
+                self,
+                "Подтверждение",
+                "Вы уверены, что хотите удалить эту организацию?",
+                QMessageBox.StandardButton.Yes |
+                QMessageBox.StandardButton.No
+            )
+            if question == QMessageBox.StandardButton.No:
+                return
 
-        if response.status_code != 200:
-            QMessageBox.warning(
-                self,
-                "Ошибка",
-                "Что-то введено некорректно"
+            if not check_server():
+
+                message_box = QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось подключиться к серверу",
+                    QMessageBox.StandardButton.Abort
+                )
+
+                if message_box == QMessageBox.StandardButton.Abort:
+                    exit(-1)
+
+            response = requests.post(
+                f"{BASE_URL}/admin/organizations/remove",
+                headers={"x-access-token": app.storage.get_value(key="token")},
+                json={"id": self.current_organization_id}
             )
-        else:
-            QMessageBox.information(
-                self,
-                "Готово",
-                "Клиент удалён"
-            )
+
+            if response.status_code != 200:
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "Что-то введено некорректно"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Готово",
+                    "Организация удалён"
+                )
 
     def input_data_changed_page_2(self):
         if self.current_table_name == "clients":
@@ -2811,12 +2869,7 @@ class MainScreen(QMainWindow):
                     rows_to_write.append(row)
             writer.writerows(rows_to_write)
 
-
-
-
     # Экспорт db - кнопка
-    # def type_translator(self):
-
     def export_as_db_clicked(self) -> None:
         SaveFilePath = QFileDialog.getSaveFileName(self, 'Укажите, куда вы хотите сохранить файл', '',
                                                      'База данных (*.db)')[0]
@@ -2936,7 +2989,7 @@ class MainScreen(QMainWindow):
                 self.right_menu_stack.setCurrentIndex(1)
                 self.clients_table_can_edit = True
 
-                self.right_menu_title_page_2.setText("Почта:")
+                self.right_menu_title_page_2.setText("Email:")
                 self.right_menu_input_page_2.setText(selected[0].text())  # input text
                 self.right_menu_input_page_2.setEnabled(False)  # input
                 self.right_menu_main_button_page_2.setEnabled(False)  # main button
@@ -2984,11 +3037,11 @@ class MainScreen(QMainWindow):
             self.right_menu_stack.setCurrentIndex(3)
             self.clients_table_can_edit = True
 
-            self.right_menu_title_page_4.setText("Удалить организацию:")
+            self.right_menu_title_page_4.setText("Удалить:")
             if self.has_access:
-                self.right_menu_sub_text_page_4.setText("Удаление клиентов не рекомендовано")
+                self.right_menu_sub_text_page_4.setText("Удаление не рекомендовано")
             else:
-                self.right_menu_sub_text_page_4.setText("Вы не имеете право удалять клиентов")
+                self.right_menu_sub_text_page_4.setText("Вы не имеете право на удаления")
                 self.right_menu_main_button_page_4.setEnabled(False)
 
         else:
@@ -3014,9 +3067,92 @@ class MainScreen(QMainWindow):
 
                 self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
 
+            elif selected[0].column() == 1:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = True
 
-        elif len(selected) == self.organizations_table.columnCount() and len(set([item.row() for item in selected])) == 1:
+                self.right_menu_title_page_2.setText("Название:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 2:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Email:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 3:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Пароль:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 4:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Лимит:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 5:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.organizations_table_can_edit = True
+
+                self.right_menu_title_page_2.setText("Стикер:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(self.has_access)  # edit button
+                if self.has_access:
+                    self.right_menu_sub_text_page_2.setText(self.has_access_text)
+                else:
+                    self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            elif selected[0].column() == 6:
+                self.right_menu_stack.setCurrentIndex(8)
+                self.organizations_table_can_edit = True
+
+        elif len(selected) == self.organizations_table.columnCount() - 1 and len(set([item.row() for item in selected])) == 1:
             self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
+
+            self.right_menu_stack.setCurrentIndex(3)
+            self.clients_table_can_edit = True
+
+            self.right_menu_title_page_4.setText("Удалить:")
+            if self.has_access:
+                self.right_menu_sub_text_page_4.setText("Удаление не рекомендовано")
+            else:
+                self.right_menu_sub_text_page_4.setText("Вы не имеете право на удаления")
+                self.right_menu_main_button_page_4.setEnabled(False)
         else:
             self.right_menu_stack.setCurrentIndex(0)
 
