@@ -37,6 +37,10 @@ class MainScreen(QMainWindow):
         self.organizations_table_current_selection = (-1, -1)
         self.organizations_table_can_edit = False
 
+        self.current_record_id = -1
+        self.records_table_current_selection = (-1, -1)
+        self.records_table_can_edit = False
+
         self.in_table_cell_alignment = QtCore.Qt.AlignmentFlag.AlignCenter
 
         self.setStyleSheet("""
@@ -1346,12 +1350,14 @@ class MainScreen(QMainWindow):
         self.right_menu_input_page_7_1.setObjectName("right_menu_input_page_7_1")
         self.complex_layout_page_7.addWidget(self.right_menu_input_page_7_1)
         self.right_menu_text_mid_page_7 = QtWidgets.QLabel(self.page_7_right_menu)
+        self.right_menu_text_mid_page_7.hide()
         font = QtGui.QFont()
         font.setFamily("Arial")
         self.right_menu_text_mid_page_7.setFont(font)
         self.right_menu_text_mid_page_7.setObjectName("right_menu_text_mid_page_7")
         self.complex_layout_page_7.addWidget(self.right_menu_text_mid_page_7)
         self.right_menu_input_page_7_2 = QtWidgets.QLineEdit(self.page_7_right_menu)
+        self.right_menu_input_page_7_2.hide()
         self.right_menu_input_page_7_2.setEnabled(False)
         font = QtGui.QFont()
         font.setFamily("Arial")
@@ -1367,6 +1373,8 @@ class MainScreen(QMainWindow):
         self.complex_layout_page_7.addWidget(self.right_menu_button_page_7)
         self.right_menu_vertical_layout_page_7.addLayout(self.complex_layout_page_7)
         self.right_menu_progress_bar_page_7 = QtWidgets.QProgressBar(self.page_7_right_menu)
+        self.right_menu_progress_bar_page_7.setTextVisible(False)
+        self.right_menu_progress_bar_page_7.hide()
         font = QtGui.QFont()
         font.setFamily("Arial")
         self.right_menu_progress_bar_page_7.setFont(font)
@@ -1856,6 +1864,11 @@ class MainScreen(QMainWindow):
         self.right_menu_button_page_2.setMinimumHeight(25)
         self.right_menu_button_page_2.setMinimumWidth(100)
 
+        self.right_menu_button_page_7.setMinimumHeight(25)
+        self.right_menu_button_page_7.setMinimumWidth(100)
+        self.right_menu_input_page_7_1.setMinimumHeight(25)
+        self.right_menu_input_page_7_2.setMinimumHeight(25)
+
         self.right_menu_button_page_3.setMinimumHeight(25)
         self.right_menu_button_page_3.setMinimumWidth(100)
 
@@ -1935,16 +1948,21 @@ class MainScreen(QMainWindow):
 
         self.clients_table.itemSelectionChanged.connect(self.right_menu_clients_selection_changed)
         self.organizations_table.itemSelectionChanged.connect(self.right_menu_organizations_selection_changed)
+        self.records_table.itemSelectionChanged.connect(self.right_menu_records_selection_changed)
 
         self.right_menu_button_page_2.clicked.connect(self.update_input_data_page_2)
         self.right_menu_input_page_2.textChanged.connect(self.input_data_changed_page_2)
+        self.right_menu_input_page_7_1.textChanged.connect(self.input_data_changed_page_7)
         self.right_menu_main_button_page_2.clicked.connect(self.update_data_main_button_page_2_clicked)
+        self.right_menu_main_button_page_7.clicked.connect(self.update_data_main_button_page_7_clicked)
 
         self.right_menu_button_page_3.clicked.connect(self.update_input_data_page_3)
         self.check_box_page_3.stateChanged.connect(self.input_data_changed_page_3)
         self.right_menu_main_button_page_3.clicked.connect(self.update_data_main_button_page_3_clicked)
 
         self.right_menu_main_button_page_4.clicked.connect(self.update_data_main_button_page_4_clicked)
+
+        self.right_menu_button_page_7.clicked.connect(self.update_input_data_page_7)
 
     # Настройка текста
     def setup_text(self):
@@ -2020,6 +2038,7 @@ class MainScreen(QMainWindow):
         self.right_menu_input_page_11_1.setPlaceholderText("Название")
         self.right_menu_input_page_11_2.setPlaceholderText("Email")
         self.right_menu_input_page_11_3.setPlaceholderText("Пароль")
+        self.right_menu_text_mid_page_7.setText("из")
 
         self.right_menu_main_button_page_4.setText("Удалить")
 
@@ -2586,6 +2605,9 @@ class MainScreen(QMainWindow):
     def update_input_data_page_3(self):
         self.check_box_page_3.setEnabled(not self.check_box_page_3.isEnabled())
 
+    def update_input_data_page_7(self):
+        self.right_menu_input_page_7_1.setEnabled(not self.right_menu_input_page_7_1.isEnabled())
+
     def update_data_main_button_page_2_clicked(self):
 
         if self.current_table_name == "clients":
@@ -2802,6 +2824,91 @@ class MainScreen(QMainWindow):
                     "Организация удалён"
                 )
 
+        elif self.current_table_name == "records":
+            question = QMessageBox.question(
+                self,
+                "Подтверждение",
+                "Вы уверены, что хотите удалить эту запись?",
+                QMessageBox.StandardButton.Yes |
+                QMessageBox.StandardButton.No
+            )
+            if question == QMessageBox.StandardButton.No:
+                return
+
+            if not check_server():
+
+                message_box = QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось подключиться к серверу",
+                    QMessageBox.StandardButton.Abort
+                )
+
+                if message_box == QMessageBox.StandardButton.Abort:
+                    exit(-1)
+
+            response = requests.post(
+                f"{BASE_URL}/admin/records/remove",
+                headers={"x-access-token": app.storage.get_value(key="token")},
+                json={"id": self.current_record_id}
+            )
+
+            if response.status_code != 200:
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "Что-то введено некорректно"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "Готово",
+                    "Запись удалена"
+                )
+
+    def update_data_main_button_page_7_clicked(self):
+        if not check_server():
+
+            message_box = QMessageBox.critical(
+                self,
+                "Ошибка",
+                "Не удалось подключиться к серверу",
+                QMessageBox.StandardButton.Abort
+            )
+
+            if message_box == QMessageBox.StandardButton.Abort:
+                exit(-1)
+
+        try:
+            int(self.right_menu_input_page_7_1.text())
+        except:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+            return
+        _json = {"id": self.current_record_id, "accumulated": int(self.right_menu_input_page_7_1.text())}
+
+        response = requests.put(
+            f"{BASE_URL}/admin/records/update",
+            headers={"x-access-token": app.storage.get_value(key="token")},
+            json=_json
+        )
+
+        if response.status_code != 200:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Что-то введено некорректно"
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "Готово",
+                "Данные обновлены"
+            )
+
     def input_data_changed_page_2(self):
         if self.current_table_name == "clients":
             before = self.clients_table.item(self.clients_table_current_selection[0], self.clients_table_current_selection[1]).text()
@@ -2830,6 +2937,14 @@ class MainScreen(QMainWindow):
             self.check_box_page_3.setText("Приватный")
         else:
             self.check_box_page_3.setText("Стандартный")
+
+    def input_data_changed_page_7(self):
+        before = self.records_table.item(self.records_table_current_selection[0],
+                                               self.records_table_current_selection[1]).text()
+        if self.right_menu_input_page_7_1.text() != before:
+            self.right_menu_main_button_page_7.setEnabled(True)
+        else:
+            self.right_menu_main_button_page_7.setEnabled(False)
 
     # Экспорт csv - кнопка
     def export_as_csv_clicked(self) -> None:
@@ -3157,6 +3272,83 @@ class MainScreen(QMainWindow):
 
         elif len(selected) == self.organizations_table.columnCount() - 1 and len(set([item.row() for item in selected])) == 1:
             self.current_organization_id = self.organizations_table.item(selected[0].row(), 0).text()
+
+            self.right_menu_stack.setCurrentIndex(3)
+            self.clients_table_can_edit = True
+
+            self.right_menu_title_page_4.setText("Удалить:")
+            if self.has_access:
+                self.right_menu_sub_text_page_4.setText("Удаление не рекомендовано")
+            else:
+                self.right_menu_sub_text_page_4.setText("Вы не имеете право на удаления")
+                self.right_menu_main_button_page_4.setEnabled(False)
+        else:
+            self.right_menu_stack.setCurrentIndex(0)
+
+    def right_menu_records_selection_changed(self):
+
+        selected = self.records_table.selectedItems()
+
+        if len(selected) == 1:
+            self.current_record_id = self.records_table.item(selected[0].row(), 0).text()
+            self.records_table_current_selection = (selected[0].row(), selected[0].column())
+
+            if selected[0].column() == 0:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.records_table_can_edit = False
+
+                self.right_menu_title_page_2.setText("Id:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(False)  # edit button
+
+                self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            if selected[0].column() == 1:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.records_table_can_edit = False
+
+                self.right_menu_title_page_2.setText("Организация:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(False)  # edit button
+
+                self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            if selected[0].column() == 2:
+                self.right_menu_stack.setCurrentIndex(1)
+                self.records_table_can_edit = False
+
+                self.right_menu_title_page_2.setText("Клиент:")
+                self.right_menu_input_page_2.setText(selected[0].text())  # input text
+                self.right_menu_input_page_2.setEnabled(False)  # input
+                self.right_menu_main_button_page_2.setEnabled(False)  # main button
+                self.right_menu_button_page_2.setEnabled(False)  # edit button
+
+                self.right_menu_sub_text_page_2.setText(self.has_no_access_text)
+
+            if selected[0].column() == 3:
+                self.right_menu_stack.setCurrentIndex(6)
+                self.records_table_can_edit = True
+
+                self.right_menu_title_page_7.setText("Накоплено:")
+                self.right_menu_input_page_7_1.setText(selected[0].text())  # input text
+                self.right_menu_input_page_7_1.setEnabled(False)  # input
+                self.right_menu_main_button_page_7.setEnabled(False)  # main button
+                self.right_menu_button_page_7.setEnabled(self.has_access)  # edit button
+
+                if self.has_access:
+                    self.right_menu_sub_text_page_7.setText("Изменение не рекомендовано")
+                else:
+                    self.right_menu_sub_text_page_7.setText("Вы не имеете право на изменение")
+                    self.right_menu_main_button_page_7.setEnabled(False)
+            if selected[0].column() == 4:
+                self.right_menu_stack.setCurrentIndex(0)
+
+        elif len(selected) == self.records_table.columnCount() and len(set([item.row() for item in selected])) == 1:
+            self.current_record_id = self.records_table.item(selected[0].row(), 0).text()
 
             self.right_menu_stack.setCurrentIndex(3)
             self.clients_table_can_edit = True
