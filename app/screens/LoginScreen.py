@@ -33,7 +33,6 @@ class LoginScreen(QMainWindow):
                 color: black;
             }
         """)
-        self.setGeometry(100, 100, 400, 400)
         self.form_layout = QVBoxLayout()
         inputs_layout = QVBoxLayout()
         lines_layout = QVBoxLayout()
