@@ -999,12 +999,19 @@ class MainScreen(QMainWindow):
 
         # Page 1
         self.page_3 = QtWidgets.QWidget()
-        self.page_3_Logs_View = QtWidgets.QPlainTextEdit(self.page_3)
+
+        self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.page_3)
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+
+        self.page_3_Logs_View = QtWidgets.QPlainTextEdit()
         self.page_3_Logs_View.isReadOnly()
         self.page_3_Logs_View.setStyleSheet("""
                 background-color: #575F6E;
                 border: none;
         """) #
+
+        self.horizontalLayout_9.addWidget(self.page_3_Logs_View)
+
         self.page_3.setObjectName("page_3")
 
         self.body_stack.addWidget(self.page_3)
@@ -2300,6 +2307,8 @@ class MainScreen(QMainWindow):
             f"{BASE_URL}/admin/records",
             headers={"x-access-token": app.storage.get_value(key="token")}
         )
+
+        print(response.status_code)
 
         if response.status_code != 200:
             QMessageBox.information(
