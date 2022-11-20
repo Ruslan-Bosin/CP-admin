@@ -1,6 +1,19 @@
 #  CP-Admin
 admin app for Coupons-Providing
 
+## Инструкция
+* Установить CP-admin
+* Установить [Coupons-Providing](https://github.com/Ruslan-Bosin/Coupons-Providing) _(доступ для infGAI)_ **НЕ ЗАПУСКАТЬ**
+* Открыть python консоль и прописать следующие команды:
+```py
+from app.models import create_tables, add_admin
+create_tables() # создание базы данных
+add_admin() # добавление админа (введите данные запрошенные после запуска)
+```
+* Запустить run из проекта Coupons-Providing
+* можно запускать)
+
+
 В папке проекта находится следующее:
 * Папка database, где реализуется в файле Storage.py реализуется взаимодействие с базой данных основного проекта
 * Папка screens где находятся py файлы, в которых описываются классы окон приложения:
