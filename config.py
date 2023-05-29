@@ -6,5 +6,5 @@ LOG_ROTATION = "1 MB"
 DATABASE = "data.db"
 
 # Отправка запросов
-BASE_URL = "http://127.0.0.1:5000/rest"
-BASE_URL_IMAGE = "http://127.0.0.1:5000"
+BASE_URL = "http://couponsproviding.pythonanywhere.com/rest"
+BASE_URL_IMAGE = "http://couponsproviding.pythonanywhere.com"

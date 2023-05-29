@@ -1783,7 +1783,7 @@ class MainScreen(QMainWindow):
         """)
 
         self.right_menu_button_page_10_1.setMinimumHeight(30)
-        self.right_menu_button_page_10_1.setText("SCV")
+        self.right_menu_button_page_10_1.setText("CSV")
         self.right_menu_button_page_10_2.setMinimumHeight(30)
         self.right_menu_button_page_10_2.setText("DB")
 
@@ -2136,6 +2136,23 @@ class MainScreen(QMainWindow):
         for i in range(table.columnCount()):
             table.setColumnWidth(i, column_width)
 
+    def pil2pixmap(self, im):
+
+        if im.mode == "RGB":
+            r, g, b = im.split()
+            im = Image.merge("RGB", (b, g, r))
+        elif im.mode == "RGBA":
+            r, g, b, a = im.split()
+            im = Image.merge("RGBA", (b, g, r, a))
+        elif im.mode == "L":
+            im = im.convert("RGBA")
+        # Bild in RGBA konvertieren, falls nicht bereits passiert
+        im2 = im.convert("RGBA")
+        data = im2.tobytes("raw", "RGBA")
+        qim = QtGui.QImage(data, im.size[0], im.size[1], QtGui.QImage.Format.Format_ARGB32)
+        pixmap = QtGui.QPixmap.fromImage(qim)
+        return pixmap
+
     # Заполнить записи
     def fill_table_from_dict_clients(self, values_list: list[dict[str: object]]) -> None:
 
@@ -2188,9 +2205,12 @@ class MainScreen(QMainWindow):
                 image_label = QtWidgets.QLabel()
                 image_label.setScaledContents(True)
                 pillow_image = Image.open(requests.get(image_url, stream=True).raw)
-                qt_image = ImageQt(pillow_image)
-                pixmap = QtGui.QPixmap.fromImage(qt_image)
+                # qt_image = ImageQt(pillow_image)
+                # # qt_image = ImageQt(pillow_image)
+                # pixmap = QtGui.QPixmap.fromImage(qt_image)
+                pixmap = self.pil2pixmap(pillow_image)
                 image_label.setPixmap(pixmap)
+                
             else:
                 image_label = QtWidgets.QLabel()
                 image_label.setText("Нет")
